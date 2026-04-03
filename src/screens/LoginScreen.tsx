@@ -53,7 +53,11 @@ const LoginScreen = () => {
             if (response.ok) {
                 // Save token
                 if (data.token) {
-                    await AsyncStorage.setItem('auth-token', data.token);
+                    try {
+                        await AsyncStorage.setItem('auth-token', data.token);
+                    } catch (storageError) {
+                        console.error("ASYNC STORAGE ERROR:", storageError);
+                    }
                 }
 
                 Alert.alert('Success', 'Login successful');
@@ -66,9 +70,11 @@ const LoginScreen = () => {
                     data.message || data.error || 'Invalid credentials'
                 );
             }
-        } catch (error) {
-            console.log(error);
-            Alert.alert('Error', 'Network error');
+        } catch (error: any) {
+            console.error("LOGIN ERROR:", error);
+            const isNetworkError = error?.message?.toLowerCase().includes('fetch') || error?.message?.toLowerCase().includes('network');
+            const errorTitle = isNetworkError ? 'Network Error' : 'Error';
+            Alert.alert(errorTitle, error?.message || 'An unexpected error occurred');
         } finally {
             setLoading(false);
         }
@@ -84,6 +90,8 @@ const LoginScreen = () => {
             blurRadius={3}
         >
             <View style={styles.overlay}>
+                <Text style={styles.logo}>SNP</Text>
+
                 <View style={styles.card}>
                     <Text style={styles.title}>Driver Login</Text>
                     <Text style={styles.subtitle}>
@@ -133,7 +141,7 @@ const LoginScreen = () => {
                         </Text>
                     </View>
                 </View>
-            </View> {/* ✅ THIS WAS MISSING */}
+            </View>
         </ImageBackground>
     );
 };
@@ -153,10 +161,11 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 22,
         fontWeight: 'bold',
+        marginBottom: 10,
     },
     subtitle: {
         color: '#666',
-        marginBottom: 20,
+        marginBottom: 10,
     },
     label: {
         fontSize: 12,
@@ -167,15 +176,16 @@ const styles = StyleSheet.create({
     input: {
         backgroundColor: '#f1f1f1',
         borderRadius: 10,
-        padding: 12,
-        marginTop: 5,
+        padding: 15,
+        marginTop: 6,
     },
     button: {
         backgroundColor: '#000',
-        padding: 15,
-        borderRadius: 12,
+        padding: 16,
+        borderRadius: 14,
         marginTop: 20,
         alignItems: 'center',
+        marginBottom: 10,
     },
     disabledButton: {
         backgroundColor: '#ccc',
@@ -201,5 +211,12 @@ const styles = StyleSheet.create({
     },
     background: {
         flex: 1,
+    },
+    logo: {
+        color: '#fff',
+        fontSize: 28,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: 20,
     },
 });

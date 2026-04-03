@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+
 import {
     View,
     Text,
@@ -14,6 +15,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../api/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { KeyboardAvoidingView, Platform } from 'react-native';
+import { ImageBackground } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 
 const RegisterScreen = () => {
     const navigation = useNavigation<any>();
@@ -28,7 +32,9 @@ const RegisterScreen = () => {
         aadharNo: '',
         licenseNo: '',
         alternateMobile1: '',
-        alternateMobile2: '', // ✅ ADD THIS
+        alternateMobile2: '',
+        alternateMobile3: '', // ✅ ADD
+        alternateMobile4: '', // ✅ ADD
         gpayNo: '',
     });
 
@@ -100,6 +106,8 @@ const RegisterScreen = () => {
                         altPhone: [
                             form.alternateMobile1,
                             form.alternateMobile2,
+                            form.alternateMobile3,
+                            form.alternateMobile4,
                         ].filter(Boolean),
 
                         upiId: form.gpayNo,
@@ -140,114 +148,221 @@ const RegisterScreen = () => {
 
 
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.title}>Driver Registration</Text>
-
-            {[
-                { key: 'name', label: 'Full Name' },
-                { key: 'email', label: 'Email' },
-                { key: 'phone', label: 'Phone' },
-                { key: 'password', label: 'Password' },
-                { key: 'aadharNo', label: 'Aadhar Number' },
-                { key: 'licenseNo', label: 'License Number' },
-                { key: 'alternateMobile1', label: 'Alternate Phone 1' },
-                { key: 'alternateMobile2', label: 'Alternate Phone 2' }, // ✅ ADD
-                { key: 'gpayNo', label: 'UPI ID' },
-            ].map((item) => (
-                <View key={item.key}>
-                    <Text style={styles.label}>{item.label}</Text>
-                    <TextInput
-                        style={styles.input}
-                        secureTextEntry={item.key === 'password'}
-                        value={(form as any)[item.key]}
-                        onChangeText={(text) =>
-                            setForm({ ...form, [item.key]: text })
-                        }
-                    />
-                </View>
-            ))}
-
-            {/* Image Upload */}
-            <Text style={styles.label}>Upload Documents</Text>
-
-            <View style={styles.imageRow}>
-                {['photo', 'dlPhoto', 'panPhoto', 'aadharPhoto'].map((key) => (
-                    <TouchableOpacity
-                        key={key}
-                        style={styles.uploadBox}
-                        onPress={() => pickImage(key)}
-                    >
-                        {images[key] ? (
-                            <Image source={{ uri: images[key].uri }} style={styles.image} />
-                        ) : (
-                            <Text style={{ fontSize: 12 }}>Upload</Text>
-                        )}
-                    </TouchableOpacity>
-                ))}
-            </View>
-
-            <TouchableOpacity
-                style={styles.button}
-                onPress={handleRegister}
-                disabled={loading}
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+            <ImageBackground
+                source={{
+                    uri: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7',
+                }}
+                style={{ flex: 1 }}
+                blurRadius={3}
             >
-                {loading ? (
-                    <ActivityIndicator color="#fff" />
-                ) : (
-                    <Text style={styles.btnText}>Register</Text>
-                )}
-            </TouchableOpacity>
-        </ScrollView>
+                <View style={styles.overlay}>
+                    <Text style={styles.logo}>SNP</Text>
+
+                    <View style={styles.card}>
+                        <ScrollView
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{ paddingBottom: 30 }}
+                            keyboardShouldPersistTaps="handled"
+                            keyboardDismissMode="on-drag"
+                        >
+                            <TouchableOpacity onPress={() => navigation.goBack()}>
+                                <Text style={styles.back}>← Back to Login</Text>
+                            </TouchableOpacity>
+
+                            <Text style={styles.title}>Driver Registration</Text>
+
+                            {[
+                                { key: 'name', label: 'Full Name' },
+                                { key: 'email', label: 'Email' },
+                                { key: 'phone', label: 'Phone' },
+                                { key: 'password', label: 'Password' },
+                                { key: 'aadharNo', label: 'Aadhar Number' },
+                                { key: 'licenseNo', label: 'License Number' },
+                                { key: 'alternateMobile1', label: 'Alternate Phone 1' },
+                                { key: 'alternateMobile2', label: 'Alternate Phone 2' },
+                                { key: 'alternateMobile3', label: 'Alternate Phone 3' }, // ✅ ADD
+                                { key: 'alternateMobile4', label: 'Alternate Phone 4' }, // ✅ ADD
+                                { key: 'gpayNo', label: 'UPI ID (GPay/PhonePe)' },
+                            ].map((item) => (
+                                <View key={item.key}>
+                                    <Text style={styles.label}>{item.label}</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        secureTextEntry={item.key === 'password'}
+                                        value={(form as any)[item.key]}
+                                        keyboardType={
+                                            item.key.includes('phone') || item.key === 'aadharNo'
+                                                ? 'phone-pad'
+                                                : 'default'
+                                        }
+                                        maxLength={
+                                            item.key.includes('phone')
+                                                ? 10
+                                                : item.key === 'aadharNo'
+                                                    ? 12
+                                                    : undefined
+                                        }
+                                        onChangeText={(text) => {
+                                            let value = text;
+
+                                            // ✅ Allow only numbers for phone & aadhar
+                                            if (item.key.includes('phone') || item.key === 'aadharNo') {
+                                                value = text.replace(/[^0-9]/g, '');
+                                            }
+
+                                            setForm({ ...form, [item.key]: value });
+                                        }}
+                                    />
+
+                                </View>
+                            ))}
+
+                            {/* Image Upload */}
+                            <Text style={styles.label}>Upload Documents</Text>
+
+                            <View style={styles.uploadGrid}>
+                                {[
+                                    { key: 'photo', label: 'Photo', icon: 'image' },
+                                    { key: 'dlPhoto', label: 'Driving License', icon: 'file-text' },
+                                    { key: 'panPhoto', label: 'PAN Card', icon: 'credit-card' },
+                                    { key: 'aadharPhoto', label: 'Aadhar Card', icon: 'file' },
+                                ].map((item) => (
+                                    <TouchableOpacity
+                                        key={item.key}
+                                        style={styles.uploadBox}
+                                        onPress={() => pickImage(item.key)}
+                                    >
+                                        {images[item.key] ? (
+                                            <Image
+                                                source={{ uri: images[item.key].uri }}
+                                                style={styles.image}
+                                            />
+                                        ) : (
+                                            <View style={styles.uploadContent}>
+                                                <Feather
+                                                    name={item.icon as any}
+                                                    size={22}
+                                                    color="#6b7280"
+                                                    style={styles.icon}
+                                                />
+                                                <Text style={styles.uploadText}>{item.label}</Text>
+                                            </View>
+                                        )}
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </ScrollView>
+
+                        {/* Sticky Register Button */}
+                        <TouchableOpacity
+                            style={styles.button}
+                            onPress={handleRegister}
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={styles.btnText}>Register</Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </ImageBackground>
+        </KeyboardAvoidingView>
     );
 };
 
 export default RegisterScreen;
 
 const styles = StyleSheet.create({
-    container: {
+    overlay: {
         flex: 1,
-        padding: 15,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        justifyContent: 'center',
+        padding: 20,
     },
-    title: {
-        fontSize: 22,
+    logo: {
+        color: '#fff',
+        fontSize: 28,
         fontWeight: 'bold',
+        textAlign: 'center',
         marginBottom: 20,
     },
+    card: {
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 20,
+        paddingBottom: 15,
+        maxHeight: '88%',
+        elevation: 5,
+    },
+    back: {
+        color: '#888',
+        marginBottom: 10,
+        fontWeight: 'bold',
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
     label: {
-        fontSize: 12,
-        color: '#666',
-        marginTop: 10,
+        fontSize: 11,
+        color: '#888',
+        marginTop: 14,
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
     },
     input: {
-        backgroundColor: '#eee',
-        borderRadius: 10,
-        padding: 10,
-        marginTop: 5,
+        backgroundColor: '#f1f1f1',
+        borderRadius: 14,
+        padding: 15,
+        marginTop: 6,
     },
     button: {
         backgroundColor: '#000',
-        padding: 15,
-        borderRadius: 10,
-        marginTop: 20,
+        padding: 16,
+        borderRadius: 14,
+        marginTop: 10,
+        marginBottom: 10,
         alignItems: 'center',
     },
     btnText: {
         color: '#fff',
         fontWeight: 'bold',
     },
-    imageRow: {
+    uploadGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 10,
+        justifyContent: 'space-between',
         marginTop: 10,
+        rowGap: 12,
     },
     uploadBox: {
-        width: 80,
-        height: 80,
-        backgroundColor: '#ddd',
+        width: '48%',
+        height: 95,
+        borderWidth: 1.5,
+        borderStyle: 'dashed',
+        borderColor: '#d1d5db',
+        borderRadius: 14,
         justifyContent: 'center',
         alignItems: 'center',
-        borderRadius: 10,
+        backgroundColor: '#fafafa',
+    },
+    uploadContent: {
+        alignItems: 'center',
+    },
+    icon: {
+        marginBottom: 5,
+    },
+    uploadText: {
+        fontSize: 12,
+        color: '#666',
+        fontWeight: '500',
     },
     image: {
         width: '100%',
