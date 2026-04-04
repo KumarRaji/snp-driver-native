@@ -63,7 +63,7 @@ const LoginScreen = () => {
                 Alert.alert('Success', 'Login successful');
 
                 // Navigate
-                navigation.replace('Home');
+                navigation.replace('DriverTabs');
             } else {
                 Alert.alert(
                     'Login Failed',

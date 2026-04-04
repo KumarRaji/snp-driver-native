@@ -19,6 +19,7 @@ import { KeyboardAvoidingView, Platform } from 'react-native';
 import { ImageBackground } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
+
 const RegisterScreen = () => {
     const navigation = useNavigation<any>();
 
@@ -33,7 +34,7 @@ const RegisterScreen = () => {
         licenseNo: '',
         alternateMobile1: '',
         alternateMobile2: '',
-        alternateMobile3: '', 
+        alternateMobile3: '',
         alternateMobile4: '',
         gpayNo: '',
     });
@@ -185,7 +186,7 @@ const RegisterScreen = () => {
                                 { key: 'alternateMobile1', label: 'Alternate Phone 1' },
                                 { key: 'alternateMobile2', label: 'Alternate Phone 2' },
                                 { key: 'alternateMobile3', label: 'Alternate Phone 3' },
-                                { key: 'alternateMobile4', label: 'Alternate Phone 4' }, 
+                                { key: 'alternateMobile4', label: 'Alternate Phone 4' },
                                 { key: 'gpayNo', label: 'UPI ID (GPay/PhonePe)' },
                             ].map((item) => (
                                 <View key={item.key}>
@@ -194,11 +195,17 @@ const RegisterScreen = () => {
                                         style={styles.input}
                                         secureTextEntry={item.key === 'password'}
                                         value={(form as any)[item.key]}
+
+                                        // ✅ Keyboard type
                                         keyboardType={
                                             item.key.includes('phone') || item.key === 'aadharNo'
                                                 ? 'phone-pad'
-                                                : 'default'
+                                                : item.key === 'email'
+                                                    ? 'email-address'
+                                                    : 'default'
                                         }
+
+                                        // ✅ Max length
                                         maxLength={
                                             item.key.includes('phone')
                                                 ? 10
@@ -206,17 +213,24 @@ const RegisterScreen = () => {
                                                     ? 12
                                                     : undefined
                                         }
+
+                                        autoCapitalize="none"
+
                                         onChangeText={(text) => {
                                             let value = text;
 
-                                            // ✅ Allow only numbers for phone & aadhar
+                                            // ✅ Only numbers for phone + aadhar
                                             if (item.key.includes('phone') || item.key === 'aadharNo') {
                                                 value = text.replace(/[^0-9]/g, '');
                                             }
 
-                                            setForm({ ...form, [item.key]: value });
+                                            setForm((prev) => ({
+                                                ...prev,
+                                                [item.key]: value,
+                                            }));
                                         }}
                                     />
+
 
                                 </View>
                             ))}
