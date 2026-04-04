@@ -33,8 +33,8 @@ const RegisterScreen = () => {
         licenseNo: '',
         alternateMobile1: '',
         alternateMobile2: '',
-        alternateMobile3: '', // ✅ ADD
-        alternateMobile4: '', // ✅ ADD
+        alternateMobile3: '', 
+        alternateMobile4: '',
         gpayNo: '',
     });
 
@@ -184,8 +184,8 @@ const RegisterScreen = () => {
                                 { key: 'licenseNo', label: 'License Number' },
                                 { key: 'alternateMobile1', label: 'Alternate Phone 1' },
                                 { key: 'alternateMobile2', label: 'Alternate Phone 2' },
-                                { key: 'alternateMobile3', label: 'Alternate Phone 3' }, // ✅ ADD
-                                { key: 'alternateMobile4', label: 'Alternate Phone 4' }, // ✅ ADD
+                                { key: 'alternateMobile3', label: 'Alternate Phone 3' },
+                                { key: 'alternateMobile4', label: 'Alternate Phone 4' }, 
                                 { key: 'gpayNo', label: 'UPI ID (GPay/PhonePe)' },
                             ].map((item) => (
                                 <View key={item.key}>
