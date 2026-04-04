@@ -1,12 +1,15 @@
 // src/components/AppHeader.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const AppHeader = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [showMenu, setShowMenu] = useState(false);
 
@@ -54,29 +57,50 @@ const AppHeader = () => {
         {/* Settings Icon */}
         <TouchableOpacity
           style={styles.icon}
-          onPress={() => setShowMenu(!showMenu)}
+          onPress={() => setShowMenu(true)}
         >
           <Feather name="settings" size={20} color="#fff" />
         </TouchableOpacity>
 
         {/* Dropdown Menu */}
-        {showMenu && (
-          <View style={styles.dropdown}>
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setShowMenu(false);
-              navigation.navigate('Profile');
-              }}
-            >
-              <Text style={styles.dropdownText}>Profile</Text>
-            </TouchableOpacity>
+        <Modal
+          visible={showMenu}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowMenu(false)}
+        >
+          <TouchableOpacity 
+            style={styles.modalOverlay} 
+            activeOpacity={1} 
+            onPressOut={() => setShowMenu(false)}
+          >
+            <View style={[styles.dropdown, { top: insets.top + 40 }]}>
+              <TouchableOpacity
+                style={[
+                  styles.dropdownItem,
+                  route.name === 'Profile' && styles.activeDropdownItem
+                ]}
+                onPress={() => {
+                  setShowMenu(false);
+                  navigation.navigate('Profile');
+                }}
+              >
+                <Text 
+                  style={[
+                    styles.dropdownText, 
+                    route.name === 'Profile' && { color: '#2563eb', fontWeight: 'bold' }
+                  ]}
+                >
+                  Profile
+                </Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity style={styles.dropdownItem} onPress={handleLogout}>
-              <Text style={[styles.dropdownText, { color: '#ef4444' }]}>Logout</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+              <TouchableOpacity style={styles.dropdownItem} onPress={() => { setShowMenu(false); handleLogout(); }}>
+                <Text style={[styles.dropdownText, { color: '#ef4444' }]}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
       </View>
     </View>
   );
@@ -123,10 +147,13 @@ const styles = StyleSheet.create({
     padding: 6,
   },
 
+  modalOverlay: {
+    flex: 1,
+  },
+
   dropdown: {
     position: 'absolute',
-    top: 40,
-    right: 0,
+    right: 15,
     backgroundColor: '#fff',
     borderRadius: 8,
     width: 120,
@@ -140,6 +167,9 @@ const styles = StyleSheet.create({
     padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f1f1f1',
+  },
+  activeDropdownItem: {
+    backgroundColor: '#eff6ff',
   },
   dropdownText: {
     fontSize: 14,

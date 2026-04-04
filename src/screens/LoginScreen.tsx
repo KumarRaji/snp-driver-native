@@ -60,8 +60,6 @@ const LoginScreen = () => {
                     }
                 }
 
-                Alert.alert('Success', 'Login successful');
-
                 // Navigate
                 navigation.replace('DriverTabs');
             } else {

@@ -24,8 +24,8 @@ export default function DriverTabs() {
           tabBarIndicatorStyle: styles.indicator,
         }}
       >
-        <Tab.Screen name="REQUESTS" component={RequestsScreen} />
         <Tab.Screen name="HOME" component={HomeScreen} />
+        <Tab.Screen name="REQUESTS" component={RequestsScreen} />
         <Tab.Screen name="TRIPS" component={TripsScreen} />
         <Tab.Screen name="PACKAGES" component={PackagesScreen} />
       </Tab.Navigator>

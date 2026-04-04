@@ -11,6 +11,8 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
+import AppHeader from '../components/AppHeader';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const BASE_URL = 'https://drivemate.api.luisant.cloud/api';
 
@@ -44,7 +46,7 @@ const ProfileScreen = () => {
       });
       const subData = await subRes.json();
 
-      setProfile(data);
+      setProfile(data?.user || data);
       setSubscription(subData);
     } catch (err) {
       console.log(err);
@@ -58,100 +60,147 @@ const ProfileScreen = () => {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => navigation.goBack()}
-        >
-          <Feather name="arrow-left" size={24} color="#fff" />
-        </TouchableOpacity>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+      <AppHeader />
+      <ScrollView style={styles.container}>
+        {/* HEADER */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => navigation.goBack()}
+          >
+            <Feather name="arrow-left" size={24} color="#000" />
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.settingsBtn}
-          onPress={() => navigation.navigate('Settings')}
-        >
-          <Feather name="settings" size={24} color="#fff" />
-        </TouchableOpacity>
+          <View style={styles.avatarContainer}>
+            <View style={styles.avatar}>
+              {profile?.photo ? (
+                <Image source={{ uri: profile.photo }} style={styles.image} />
+              ) : (
+                <Text style={styles.avatarText}>
+                  {profile?.name?.charAt(0)}
+                </Text>
+              )}
+            </View>
+          </View>
 
-        <View style={styles.avatar}>
-          {profile?.photo ? (
-            <Image source={{ uri: profile.photo }} style={styles.image} />
+          <View style={styles.infoRow}>
+            <View style={styles.infoLeft}>
+              <Text style={styles.name}>{profile?.name}</Text>
+              <Text style={styles.phone}>{profile?.phone}</Text>
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.editBtn}
+              onPress={() => navigation.navigate('EditProfile', { profile })}
+            >
+              <Text style={styles.editText}>Edit Profile</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* STATS */}
+        <View style={styles.card}>
+          <Text style={styles.label}>Total Trips</Text>
+          <Text style={styles.value}>
+            {profile?.totalRides || 0}
+          </Text>
+        </View>
+
+        {/* SUBSCRIPTION */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Subscription</Text>
+
+          {subscription?.plan ? (
+            <>
+              <Text style={styles.value}>
+                {subscription.plan.name}
+              </Text>
+              <Text style={styles.subText}>
+                {subscription.paymentMethod}
+              </Text>
+            </>
           ) : (
-            <Text style={styles.avatarText}>
-              {profile?.name?.charAt(0)}
-            </Text>
+            <View>
+              <Text style={styles.noPlanText}>You don't have any current plan</Text>
+              <TouchableOpacity 
+                style={styles.planBtn}
+                onPress={() => navigation.navigate('DriverTabs', { screen: 'PACKAGES' })}
+              >
+                <Text style={styles.planBtnText}>Make Plan</Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
 
-        <Text style={styles.name}>{profile?.name}</Text>
-        <Text style={styles.phone}>{profile?.phone}</Text>
-      </View>
+        {/* DOCUMENTS */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Documents</Text>
 
-      {/* STATS */}
-      <View style={styles.card}>
-        <Text style={styles.label}>Total Trips</Text>
-        <Text style={styles.value}>
-          {profile?.completedTrips || 0}
-        </Text>
-      </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>License</Text>
+            <Text style={styles.rowValue}>{profile?.licenseNo || 'Not set'}</Text>
+          </View>
+          <View style={[styles.infoRow, { marginTop: 10 }]}>
+            <Text style={styles.label}>Aadhar</Text>
+            <Text style={styles.rowValue}>{profile?.aadharNo || 'Not set'}</Text>
+          </View>
+        </View>
 
-      {/* SUBSCRIPTION */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Subscription</Text>
+        {/* ALT PHONES */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Alternate Phones</Text>
 
-        {subscription?.plan ? (
-          <>
-            <Text style={styles.value}>
-              {subscription.plan.name}
-            </Text>
-            <Text style={styles.subText}>
-              {subscription.paymentMethod}
-            </Text>
-          </>
-        ) : (
-          <Text>No Active Plan</Text>
-        )}
-      </View>
+          {(() => {
+            const alts = [
+              profile?.alternateMobile1,
+              profile?.alternateMobile2,
+              profile?.alternateMobile3,
+              profile?.alternateMobile4,
+            ].filter(Boolean);
 
-      {/* DOCUMENTS */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Documents</Text>
+            if (!alts.length) return <Text style={styles.label}>None</Text>;
+            return alts.map((p, i) => (
+              <View key={i} style={[styles.infoRow, { marginTop: i > 0 ? 10 : 0 }]}>
+                <Text style={styles.label}>Phone {i + 1}</Text>
+                <Text style={styles.rowValue}>{p}</Text>
+              </View>
+            ));
+          })()}
+        </View>
 
-        <Text>License: {profile?.licenseNo}</Text>
-        <Text>Aadhar: {profile?.aadharNo}</Text>
-      </View>
+        {/* PAYMENT */}
+        <View style={[styles.card, styles.rowCard]}>
+          <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>UPI</Text>
+          <Text style={styles.rowValue}>{profile?.gpayNo || profile?.phonepeNo || 'Not set'}</Text>
+        </View>
 
-      {/* ALT PHONES */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Alternate Phones</Text>
+        {/* DOCUMENT STATUS */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Uploads</Text>
 
-        {profile?.altPhone?.length ? (
-          profile.altPhone.map((p: string, i: number) => (
-            <Text key={i}>Phone {i + 1}: {p}</Text>
-          ))
-        ) : (
-          <Text>None</Text>
-        )}
-      </View>
-
-      {/* PAYMENT */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>UPI</Text>
-        <Text>{profile?.upiId || 'Not set'}</Text>
-      </View>
-
-      {/* DOCUMENT STATUS */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Uploads</Text>
-
-        <Text>Photo: {profile?.photo ? '✓' : '✗'}</Text>
-        <Text>DL: {profile?.dlPhoto ? '✓' : '✗'}</Text>
-        <Text>PAN: {profile?.panPhoto ? '✓' : '✗'}</Text>
-        <Text>Aadhar: {profile?.aadharPhoto ? '✓' : '✗'}</Text>
-      </View>
-    </ScrollView>
+          <View style={styles.docGrid}>
+            {[
+              { label: 'Photo', uri: profile?.photo },
+              { label: 'Driving License', uri: profile?.dlPhoto },
+              { label: 'PAN Card', uri: profile?.panPhoto },
+              { label: 'Aadhar Card', uri: profile?.aadharPhoto },
+            ].map((doc, i) => (
+              <View key={i} style={styles.docBox}>
+                <Text style={styles.docLabel}>{doc.label}</Text>
+                {doc.uri ? (
+                  <Image source={{ uri: doc.uri }} style={styles.docImage} resizeMode="cover" />
+                ) : (
+                  <View style={styles.docMissing}>
+                    <Text style={{ color: '#999', fontSize: 12 }}>Missing</Text>
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -163,9 +212,7 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    backgroundColor: '#000',
     padding: 20,
-    alignItems: 'center',
   },
 
   backBtn: {
@@ -175,11 +222,9 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
 
-  settingsBtn: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    zIndex: 10,
+  avatarContainer: {
+    alignItems: 'center',
+    marginBottom: 15,
   },
 
   avatar: {
@@ -202,15 +247,38 @@ const styles = StyleSheet.create({
     borderRadius: 40,
   },
 
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  infoLeft: {
+    flex: 1,
+  },
+
   name: {
-    color: '#fff',
+    color: '#000',
     fontSize: 18,
-    marginTop: 10,
     fontWeight: 'bold',
   },
 
   phone: {
-    color: '#ccc',
+    color: '#666',
+    marginTop: 4,
+  },
+
+  editBtn: {
+    backgroundColor: '#333',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+
+  editText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 
   card: {
@@ -229,6 +297,18 @@ const styles = StyleSheet.create({
     color: '#888',
   },
 
+  rowCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  rowValue: {
+    color: '#444',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+
   value: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -236,5 +316,61 @@ const styles = StyleSheet.create({
 
   subText: {
     color: '#666',
+  },
+
+  noPlanText: {
+    color: '#666',
+    marginBottom: 12,
+  },
+
+  planBtn: {
+    backgroundColor: '#000',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+
+  planBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+
+  docGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  
+  docBox: {
+    width: '48%',
+    marginBottom: 15,
+  },
+
+  docLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 6,
+    fontWeight: 'bold',
+  },
+
+  docImage: {
+    width: '100%',
+    height: 100,
+    borderRadius: 8,
+    backgroundColor: '#eee',
+  },
+
+  docMissing: {
+    width: '100%',
+    height: 100,
+    borderRadius: 8,
+    backgroundColor: '#f9f9f9',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
