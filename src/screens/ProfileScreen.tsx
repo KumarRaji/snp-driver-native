@@ -13,6 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import AppHeader from '../components/AppHeader';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 
 const BASE_URL = 'https://drivemate.api.luisant.cloud/api';
 
@@ -115,16 +116,27 @@ const ProfileScreen = () => {
 
         {/* STATS */}
         <View style={styles.card}>
-          <Text style={styles.label}>Total Trips</Text>
-          <Text style={styles.value}>
-            {profile?.totalRides || 0}
-          </Text>
+          <View style={styles.statsRow}>
+            <View style={styles.iconCircle}>
+              <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <Path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </Svg>
+            </View>
+            <View>
+              <Text style={styles.label}>Total Trips completed</Text>
+              <Text style={styles.value}>
+                {profile?.totalRides || 0}
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* SUBSCRIPTION */}
         <View style={styles.card}>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Current Plan</Text>
+          <View style={[styles.infoRow, !subscription?.plan && { justifyContent: 'center', marginBottom: 6 }]}>
+            <Text style={styles.label}>
+              {subscription?.plan ? 'Current Plan' : 'No Active Plan'}
+            </Text>
             {subscription?.plan && (
               <View style={styles.paymentBadge}>
                 <Text style={styles.paymentBadgeText}>{subscription.paymentMethod}</Text>
@@ -147,7 +159,14 @@ const ProfileScreen = () => {
             </>
           ) : (
             <View>
-              <Text style={styles.noPlanText}>You don't have any current plan</Text>
+              <View style={styles.noPlanContainer}>
+                <View style={styles.warningIconCircle}>
+                  <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <Path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </Svg>
+                </View>
+                <Text style={[styles.noPlanText, { flex: 1 }]}>You don't have any current plan</Text>
+              </View>
               <TouchableOpacity 
                 style={styles.planBtn}
                 onPress={() => navigation.navigate('DriverTabs', { screen: 'PACKAGES' })}
@@ -344,8 +363,8 @@ const styles = StyleSheet.create({
   },
 
   paymentBadge: {
-    backgroundColor: '#666',
-    borderColor: '#666',
+    backgroundColor: '#f9fafb',
+    borderColor: '#bfdbfe',
     borderWidth: 1,
     borderRadius: 4,
     paddingHorizontal: 8,
@@ -353,14 +372,22 @@ const styles = StyleSheet.create({
   },
 
   paymentBadgeText: {
-    color: '#fff',
+    color: '#4b5563',
     fontSize: 12,
     fontWeight: 'bold',
   },
 
+  noPlanContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 12,
+  },
+
   noPlanText: {
-    color: '#666',
-    marginBottom: 12,
+    color: '#000',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 
   planBtn: {
@@ -368,12 +395,36 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
   },
 
   planBtnText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 15,
+  },
+
+  iconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  warningIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#9ca3af',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   planRow: {

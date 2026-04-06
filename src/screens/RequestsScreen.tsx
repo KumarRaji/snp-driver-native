@@ -8,8 +8,12 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { getRequests, respondRequest, getActiveSubscription } from '../api/driverApi';
-import { useFocusEffect } from '@react-navigation/native';
+import {
+  getRequests,
+  respondRequest,
+  getActiveSubscription,
+} from '../api/driverApi';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 const RequestsScreen = () => {
   const [tab, setTab] = useState<'NEW' | 'HISTORY'>('NEW');
@@ -17,6 +21,7 @@ const RequestsScreen = () => {
   const [hasPackage, setHasPackage] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [activeSub, setActiveSub] = useState<any>(null);
+  const navigation = useNavigation<any>();
 
   useFocusEffect(
     useCallback(() => {
@@ -28,21 +33,25 @@ const RequestsScreen = () => {
     try {
       const data = await getRequests();
       setRequests(data.requests || []);
-     const sub = await getActiveSubscription();
 
-const hasActivePackage =
-  sub &&
-  (sub.status === 'ACTIVE' || sub.status === 'SUCCESS') &&
-  new Date(sub.endDate) > new Date();
+      const sub = await getActiveSubscription();
 
-setHasPackage(hasActivePackage);
-setActiveSub(sub);
+      const hasActivePackage =
+        sub &&
+        (sub.status === 'ACTIVE' || sub.status === 'SUCCESS') &&
+        new Date(sub.endDate) > new Date();
+
+      setHasPackage(hasActivePackage);
+      setActiveSub(sub);
     } catch (e) {
       console.log(e);
     }
   };
 
-  const performAction = async (id: string, action: 'ACCEPTED' | 'REJECTED') => {
+  const performAction = async (
+    id: string,
+    action: 'ACCEPTED' | 'REJECTED'
+  ) => {
     try {
       setLoadingId(id);
       await respondRequest(id, action);
@@ -54,7 +63,10 @@ setActiveSub(sub);
     }
   };
 
-  const handleAction = (id: string, action: 'ACCEPTED' | 'REJECTED') => {
+  const handleAction = (
+    id: string,
+    action: 'ACCEPTED' | 'REJECTED'
+  ) => {
     Alert.alert(
       action === 'ACCEPTED' ? 'Accept Request?' : 'Reject Request?',
       'Are you sure?',
@@ -70,9 +82,8 @@ setActiveSub(sub);
 
   return (
     <View style={styles.screen}>
-      {/* ✅ CONTENT */}
       <ScrollView contentContainerStyle={styles.container}>
-        
+
         {/* TOGGLE */}
         <View style={styles.toggle}>
           <TouchableOpacity
@@ -94,21 +105,27 @@ setActiveSub(sub);
           </TouchableOpacity>
         </View>
 
-        {/* NO PACKAGE */}
+        {/* ❌ NO PACKAGE */}
         {!hasPackage && (
           <View style={styles.warningCard}>
-            <Text style={styles.warningTitle}>⚠ Package Required</Text>
+            <Text style={styles.warningIcon}>⚠</Text>
+
+            <Text style={styles.warningTitle}>Package Required</Text>
+
             <Text style={styles.warningText}>
               Please choose a driver package from the PACKAGES tab to start receiving booking requests.
             </Text>
 
-            <TouchableOpacity style={styles.packageBtn}>
-              <Text style={{ color: '#fff' }}>Go to Packages</Text>
+            <TouchableOpacity 
+              style={styles.packageBtn}
+              onPress={() => navigation.navigate('PACKAGES')}
+            >
+              <Text style={styles.packageBtnText}>Go to Packages</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* ACTIVE PACKAGE CARD */}
+        {/* ✅ ACTIVE PACKAGE */}
         {hasPackage && (
           <View style={styles.activeCard}>
             <View style={styles.activeRow}>
@@ -124,7 +141,7 @@ setActiveSub(sub);
           </View>
         )}
 
-        {/* EMPTY STATE */}
+        {/* EMPTY */}
         {hasPackage && requests.length === 0 && (
           <View style={styles.emptyBox}>
             <Text style={styles.emptyIcon}>📥</Text>
@@ -132,7 +149,7 @@ setActiveSub(sub);
           </View>
         )}
 
-        {/* REQUEST LIST */}
+        {/* LIST */}
         {hasPackage &&
           requests.map((req) => (
             <View key={req.id} style={styles.card}>
@@ -150,7 +167,6 @@ setActiveSub(sub);
                 ₹{req.booking.estimateAmount}
               </Text>
 
-              {/* ACTIONS */}
               <View style={styles.row}>
                 <TouchableOpacity
                   style={styles.reject}
@@ -217,30 +233,105 @@ const styles = StyleSheet.create({
   text: { color: '#666' },
   activeText: { color: '#fff', fontWeight: 'bold' },
 
+  /* WARNING */
   warningCard: {
-    backgroundColor: '#fff3cd',
-    padding: 15,
-    borderRadius: 12,
+    backgroundColor: '#fff7e6',
+    padding: 20,
+    borderRadius: 16,
     marginTop: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+
+  warningIcon: {
+    fontSize: 28,
+    marginBottom: 10,
   },
 
   warningTitle: {
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 5,
+    marginBottom: 6,
+    color: '#92400e',
   },
 
   warningText: {
-    color: '#555',
-    marginBottom: 10,
+    fontSize: 13,
+    color: '#78350f',
+    textAlign: 'center',
+    marginBottom: 15,
   },
 
   packageBtn: {
     backgroundColor: '#f59e0b',
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 8,
+  },
+
+  packageBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+
+  /* ACTIVE */
+  activeCard: {
+    backgroundColor: '#f6f6f6',
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 15,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
 
+  activeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+
+  activeIcon: {
+    fontSize: 18,
+    color: 'green',
+  },
+
+  activeTitle: {
+    fontSize: 12,
+    color: '#777',
+  },
+
+  activeName: {
+    fontWeight: 'bold',
+  },
+
+  greenDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'green',
+  },
+
+  /* EMPTY */
+  emptyBox: {
+    backgroundColor: '#f3f3f3',
+    padding: 25,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+
+  emptyIcon: {
+    fontSize: 30,
+    marginBottom: 5,
+  },
+
+  emptyTitle: {
+    color: '#777',
+  },
+
+  /* CARD */
   card: {
     backgroundColor: '#000',
     padding: 15,
@@ -272,51 +363,5 @@ const styles = StyleSheet.create({
     padding: 10,
     alignItems: 'center',
     borderRadius: 8,
-  },
-
-  activeCard: {
-    backgroundColor: '#f6f6f6',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 15,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  activeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  activeIcon: {
-    fontSize: 18,
-    color: 'green',
-  },
-  activeTitle: {
-    fontSize: 12,
-    color: '#777',
-  },
-  activeName: {
-    fontWeight: 'bold',
-  },
-  greenDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'green',
-  },
-  emptyBox: {
-    backgroundColor: '#f3f3f3',
-    padding: 25,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  emptyIcon: {
-    fontSize: 30,
-    marginBottom: 5,
-  },
-  emptyTitle: {
-    color: '#777',
   },
 });
