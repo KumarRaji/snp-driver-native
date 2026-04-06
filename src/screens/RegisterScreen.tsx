@@ -198,7 +198,7 @@ const RegisterScreen = () => {
 
                                         // ✅ Keyboard type
                                         keyboardType={
-                                            item.key.includes('phone') || item.key === 'aadharNo'
+                                            item.key.includes('phone') || item.key.includes('Mobile') || item.key === 'aadharNo'
                                                 ? 'phone-pad'
                                                 : item.key === 'email'
                                                     ? 'email-address'
@@ -207,7 +207,7 @@ const RegisterScreen = () => {
 
                                         // ✅ Max length
                                         maxLength={
-                                            item.key.includes('phone')
+                                            item.key.includes('phone') || item.key.includes('Mobile')
                                                 ? 10
                                                 : item.key === 'aadharNo'
                                                     ? 12
@@ -220,7 +220,7 @@ const RegisterScreen = () => {
                                             let value = text;
 
                                             // ✅ Only numbers for phone + aadhar
-                                            if (item.key.includes('phone') || item.key === 'aadharNo') {
+                                            if (item.key.includes('phone') || item.key.includes('Mobile') || item.key === 'aadharNo') {
                                                 value = text.replace(/[^0-9]/g, '');
                                             }
 
