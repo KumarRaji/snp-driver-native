@@ -35,31 +35,26 @@ const HomeScreen = () => {
   );
 
   const completeTrip = async (id: string) => {
+    console.log('Trip ID:', id);
     try {
       setLoadingId(id);
       const token = await AsyncStorage.getItem('auth-token');
 
-      const res = await fetch(`https://drivemate.api.luisant.cloud/api/trips/${id}/status`, {
-        method: 'PUT',
+      const res = await fetch(`https://drivemate.api.luisant.cloud/api/trips/${id}/complete`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: 'COMPLETED' })
+        }
       });
 
-      if (res.ok) {
+      const data = await res.json();
+
+      if (res.ok && data.success) {
         Alert.alert('Success', 'Trip completed successfully!');
         fetchTrips(); // Refresh the list to remove the completed trip
       } else {
-        let errorMessage = `Failed to complete trip (Status: ${res.status})`;
-        try {
-          const data = await res.json();
-          errorMessage = data.message || data.error || errorMessage;
-        } catch (parseError) {
-          console.log('API returned non-JSON response (likely HTML error page).');
-        }
-        Alert.alert('Error', errorMessage);
+        Alert.alert('Error', data.error || data.message || 'Failed to complete trip');
       }
     } catch (e) {
       console.log(e);
@@ -69,13 +64,13 @@ const HomeScreen = () => {
     }
   };
 
-  const handleCompletePress = (id: string) => {
+  const handleCompletePress = (trip: any) => {
     Alert.alert(
-      'Complete Trip?',
-      'Are you sure you want to mark this trip as completed?',
+      'Complete Trip',
+      `Mark this trip as completed?\n\nFrom: ${trip.pickupLocation}\nTo: ${trip.dropLocation}`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Yes', onPress: () => completeTrip(id) },
+        { text: 'OK', onPress: () => completeTrip(trip.id) },
       ]
     );
   };
@@ -130,7 +125,7 @@ const HomeScreen = () => {
             {/* Button */}
             <TouchableOpacity
               style={styles.button}
-              onPress={() => handleCompletePress(trip.id)}
+              onPress={() => handleCompletePress(trip)}
               disabled={loadingId === trip.id}
             >
               {loadingId === trip.id ? (
