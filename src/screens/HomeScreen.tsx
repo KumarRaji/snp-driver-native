@@ -23,8 +23,12 @@ const HomeScreen = () => {
   );
 
   const fetchTrips = async () => {
-    const data = await getTrips();
-    setTrips(data.bookings || data.trips || []);
+    try {
+      const data = await getTrips();
+      setTrips(data?.bookings || data?.trips || []);
+    } catch (error) {
+      console.log('Error fetching trips:', error);
+    }
   };
 
   const activeTrips = trips.filter(

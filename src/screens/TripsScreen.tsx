@@ -18,28 +18,33 @@ const TripsScreen = () => {
   );
 
   const fetchTrips = async () => {
-    const data = await getTrips();
-
-    const sortedTrips = (data.trips || []).sort((a: any, b: any) => {
-      const getPriority = (status: string) => {
-        if (status === 'CONFIRMED') return 1;
-        if (status === 'COMPLETED') return 3;
-        return 2; // Other statuses in the middle
-      };
-      
-      const priorityDiff = getPriority(a.status) - getPriority(b.status);
-      if (priorityDiff !== 0) {
-        return priorityDiff;
-      }
-
-      // If same status, sort by date & time (newest top, oldest bottom)
-      const timeA = new Date(`${a.startDate || '1970-01-01'}T${a.startTime || '00:00'}:00`).getTime();
-      const timeB = new Date(`${b.startDate || '1970-01-01'}T${b.startTime || '00:00'}:00`).getTime();
-      
-      return timeB - timeA;
-    });
-
-    setTrips(sortedTrips);
+    try {
+      const data = await getTrips();
+  
+      const sortedTrips = (data?.trips || []).sort((a: any, b: any) => {
+        const getPriority = (status: string) => {
+          if (status === 'CONFIRMED') return 1;
+          if (status === 'COMPLETED') return 3;
+          return 2; // Other statuses in the middle
+        };
+        
+        const priorityDiff = getPriority(a.status) - getPriority(b.status);
+        if (priorityDiff !== 0) {
+          return priorityDiff;
+        }
+  
+        // If same status, sort by date & time (newest top, oldest bottom)
+        const timeA = new Date(`${a.startDate || '1970-01-01'}T${a.startTime || '00:00'}:00`).getTime();
+        const timeB = new Date(`${b.startDate || '1970-01-01'}T${b.startTime || '00:00'}:00`).getTime();
+        
+        return timeB - timeA;
+      });
+  
+      setTrips(sortedTrips);
+    } catch (error) {
+      console.log('Error fetching trips:', error);
+      setTrips([]);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -108,12 +113,35 @@ const TripsScreen = () => {
       ) : (
         completedTrips.map((trip) => (
           <View key={trip.id} style={styles.card}>
+
+            {/* Top Row */}
+            <View style={styles.topRow}>
+              <Text style={styles.date}>
+                {trip.startDate} • {trip.startTime}
+              </Text>
+
+              <View style={styles.completedBadge}>
+                <Text style={styles.completedText}>Completed</Text>
+              </View>
+            </View>
+
+            {/* FROM */}
+            <Text style={styles.label}>FROM</Text>
             <Text style={styles.location}>{trip.pickupLocation}</Text>
-            <Text style={{ textAlign: 'center', marginVertical: 4 }}>↓</Text>
+
+            {/* TO */}
+            <Text style={styles.label}>TO</Text>
             <Text style={styles.location}>{trip.dropLocation}</Text>
-            <Text style={{ marginTop: 10, color: '#666', fontSize: 13 }}>
-              Status: <Text style={{ fontWeight: 'bold', color: getStatusColor(trip.status) }}>{trip.status}</Text>
-            </Text>
+
+            {/* Bottom Row */}
+            <View style={styles.bottomRow}>
+              <View />
+
+              <Text style={styles.amount}>
+                ₹{trip.estimatedCost || trip.estimateAmount || 0}
+              </Text>
+            </View>
+
           </View>
         ))
       )}
@@ -132,7 +160,7 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     marginVertical: 15,
   },
@@ -212,5 +240,45 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginTop: 2,
+  },
+
+  date: {
+    fontSize: 12,
+    color: '#777',
+    fontWeight: '600',
+  },
+
+  completedBadge: {
+    backgroundColor: '#e6f9ed',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+
+  completedText: {
+    color: '#16a34a',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+
+  bottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 10,
+  },
+
+  type: {
+    fontSize: 12,
+    color: '#555',
+  },
+
+  amount: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000',
   },
 });
