@@ -48,14 +48,15 @@ const RequestsScreen = () => {
     }
   };
 
-  const performAction = async (
-    id: string,
-    action: 'ACCEPTED' | 'REJECTED'
-  ) => {
+  const performAction = async (id: string, action: 'ACCEPTED' | 'REJECTED') => {
     try {
       setLoadingId(id);
       await respondRequest(id, action);
-      fetchRequests();
+      
+      // 🔥 REMOVE instantly from NEW list
+      setRequests((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, status: action } : r))
+      );
     } catch (e) {
       console.log(e);
     } finally {
@@ -79,6 +80,10 @@ const RequestsScreen = () => {
       ]
     );
   };
+
+  // Filter requests properly (safely handling 'PENDING' string or missing status for new ones)
+  const newRequests = requests.filter((r) => !r.status || r.status === 'PENDING');
+  const historyRequests = requests.filter((r) => r.status && r.status !== 'PENDING');
 
   return (
     <View style={styles.screen}>
@@ -142,16 +147,18 @@ const RequestsScreen = () => {
         )}
 
         {/* EMPTY */}
-        {hasPackage && requests.length === 0 && (
+        {hasPackage && (tab === 'NEW' ? newRequests : historyRequests).length === 0 && (
           <View style={styles.emptyBox}>
             <Text style={styles.emptyIcon}>📥</Text>
-            <Text style={styles.emptyTitle}>No pending requests</Text>
+            <Text style={styles.emptyTitle}>
+              {tab === 'NEW' ? 'No pending requests' : 'No history found'}
+            </Text>
           </View>
         )}
 
-        {/* LIST */}
-        {hasPackage &&
-          requests.map((req) => (
+        {/* NEW LIST */}
+        {hasPackage && tab === 'NEW' &&
+          newRequests.map((req) => (
             <View key={req.id} style={styles.card}>
               <Text style={styles.location}>
                 {req.booking.pickupLocation}
@@ -192,6 +199,50 @@ const RequestsScreen = () => {
                   )}
                 </TouchableOpacity>
               </View>
+            </View>
+          ))}
+
+        {/* HISTORY LIST */}
+        {hasPackage && tab === 'HISTORY' &&
+          historyRequests.map((req) => (
+            <View key={req.id} style={styles.historyCard}>
+
+              {/* Top Row */}
+              <View style={styles.historyTop}>
+                <Text style={styles.date}>
+                  {req.booking?.startTime} • {req.booking?.startDate}
+                </Text>
+
+                <View style={[
+                  styles.statusBadge,
+                  req.status === 'ACCEPTED' ? styles.accepted : styles.rejected
+                ]}>
+                  <Text style={[styles.statusText, req.status === 'ACCEPTED' ? { color: '#15803d' } : { color: '#b91c1c' }]}>{req.status}</Text>
+                </View>
+              </View>
+
+              {/* Price */}
+              <Text style={styles.priceBlack}>
+                ₹{req.booking?.estimateAmount}
+              </Text>
+
+              {/* Type */}
+              <Text style={styles.type}>
+                {req.booking?.serviceType || 'LOCAL_HOURLY'}
+              </Text>
+
+              {/* Pickup */}
+              <Text style={styles.dotText}>Pickup</Text>
+              <Text style={styles.locationDark}>
+                {req.booking?.pickupLocation}
+              </Text>
+
+              {/* Drop */}
+              <Text style={styles.dotText}>Drop-off</Text>
+              <Text style={styles.locationDark}>
+                {req.booking?.dropLocation}
+              </Text>
+
             </View>
           ))}
       </ScrollView>
@@ -363,5 +414,62 @@ const styles = StyleSheet.create({
     padding: 10,
     alignItems: 'center',
     borderRadius: 8,
+  },
+
+  /* HISTORY CARD */
+  historyCard: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 12,
+    marginTop: 10,
+    elevation: 2,
+  },
+  historyTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  date: {
+    fontSize: 12,
+    color: '#777',
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  accepted: {
+    backgroundColor: '#dcfce7',
+  },
+  rejected: {
+    backgroundColor: '#fee2e2',
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  priceBlack: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 5,
+  },
+  type: {
+    backgroundColor: '#e0e7ff',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginTop: 5,
+    fontSize: 11,
+    overflow: 'hidden',
+  },
+  dotText: {
+    marginTop: 10,
+    fontSize: 11,
+    color: '#666',
+  },
+  locationDark: {
+    fontWeight: 'bold',
+    marginTop: 2,
   },
 });
