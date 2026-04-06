@@ -37,12 +37,17 @@ const AppHeader = () => {
         }
       );
 
-      const data = await res.json();
-      
-      console.log('PROFILE DATA:', data); // ✅ DEBUG
-      
-      const fullName = data?.user?.name || data?.name || '';
-      setName(fullName);
+      // Safely check if the response is JSON before parsing
+      if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+        const data = await res.json();
+        
+        console.log('PROFILE DATA:', data); // ✅ DEBUG
+        
+        const fullName = data?.user?.name || data?.name || '';
+        setName(fullName);
+      } else {
+        console.log('AppHeader Profile API returned an error or non-JSON response.');
+      }
     } catch (e) {
       console.log('Profile error:', e);
     }
