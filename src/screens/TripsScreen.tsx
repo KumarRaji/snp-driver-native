@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -6,13 +6,16 @@ import {
   StyleSheet,
 } from 'react-native';
 import { getTrips } from '../api/driverApi';
+import { useFocusEffect } from '@react-navigation/native';
 
 const TripsScreen = () => {
   const [trips, setTrips] = useState<any[]>([]);
 
-  useEffect(() => {
-    fetchTrips();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchTrips();
+    }, [])
+  );
 
   const fetchTrips = async () => {
     const data = await getTrips();
@@ -52,42 +55,69 @@ const TripsScreen = () => {
     }
   };
 
+  const upcomingTrips = trips.filter(
+    (t) => t.status === 'CONFIRMED' || t.status === 'ONGOING'
+  );
+
+  const completedTrips = trips.filter(
+    (t) => t.status === 'COMPLETED'
+  );
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       
+      {/* 🔥 Upcoming Section */}
       <Text style={styles.header}>Upcoming & Ongoing Trips</Text>
 
-      {trips.map((trip) => (
-        <View key={trip.id} style={styles.card}>
+      {upcomingTrips.length === 0 ? (
+        <View style={styles.emptyBox}>
+          <Text style={styles.emptyText}>No upcoming trips scheduled.</Text>
+        </View>
+      ) : (
+        upcomingTrips.map((trip) => (
+          <View key={trip.id} style={styles.card}>
+            <View style={styles.topRow}>
+              <View style={styles.dot} />
+              <Text style={[styles.status, { color: getStatusColor(trip.status) }]}>
+                {trip.status}
+              </Text>
+            </View>
 
-          {/* Status Badge */}
-          <View style={styles.topRow}>
-            <View style={styles.dot} />
-            <Text style={[styles.status, { color: getStatusColor(trip.status) }]}>
-              {trip.status}
+            <Text style={styles.label}>PICKUP</Text>
+            <Text style={styles.location}>{trip.pickupLocation}</Text>
+
+            <Text style={styles.label}>DROP</Text>
+            <Text style={styles.location}>{trip.dropLocation}</Text>
+
+            <Text style={styles.label}>DATE & TIME</Text>
+            <Text style={styles.value}>
+              {trip.startDate || 'N/A'} at {trip.startTime || 'N/A'}
+            </Text>
+
+            <Text style={styles.label}>EST. EARNINGS</Text>
+            <Text style={styles.earnings}>₹{trip.estimateAmount || 0}</Text>
+          </View>
+        ))
+      )}
+
+      {/* 🔥 Completed Section */}
+      <Text style={[styles.header, { marginTop: 20 }]}>Completed Trips</Text>
+
+      {completedTrips.length === 0 ? (
+        <Text style={styles.emptySmall}>No completed trips yet.</Text>
+      ) : (
+        completedTrips.map((trip) => (
+          <View key={trip.id} style={styles.card}>
+            <Text style={styles.location}>{trip.pickupLocation}</Text>
+            <Text style={{ textAlign: 'center', marginVertical: 4 }}>↓</Text>
+            <Text style={styles.location}>{trip.dropLocation}</Text>
+            <Text style={{ marginTop: 10, color: '#666', fontSize: 13 }}>
+              Status: <Text style={{ fontWeight: 'bold', color: getStatusColor(trip.status) }}>{trip.status}</Text>
             </Text>
           </View>
+        ))
+      )}
 
-          {/* Pickup */}
-          <Text style={styles.label}>PICKUP</Text>
-          <Text style={styles.location}>{trip.pickupLocation}</Text>
-
-          {/* Drop */}
-          <Text style={styles.label}>DROP</Text>
-          <Text style={styles.location}>{trip.dropLocation}</Text>
-
-          {/* Date */}
-          <Text style={styles.label}>DATE & TIME</Text>
-          <Text style={styles.value}>
-            {trip.startDate || 'N/A'} at {trip.startTime || 'N/A'}
-          </Text>
-
-          {/* Earnings */}
-          <Text style={styles.label}>EST. EARNINGS</Text>
-          <Text style={styles.earnings}>₹{trip.estimateAmount || 0}</Text>
-
-        </View>
-      ))}
     </ScrollView>
   );
 };
@@ -105,6 +135,25 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginVertical: 15,
+  },
+
+  emptyBox: {
+    backgroundColor: '#eee',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  emptyText: {
+    color: '#777',
+    fontSize: 14,
+  },
+  emptySmall: {
+    color: '#999',
+    fontSize: 13,
+    marginTop: 10,
+    textAlign: 'center',
   },
 
   card: {

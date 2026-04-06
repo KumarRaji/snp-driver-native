@@ -41,6 +41,33 @@ export const getRequests = async () => {
   return res.json();
 };
 
+//purchage subscription
+export const purchaseSubscription = async (
+  planId: string,
+  paymentMethod: string
+) => {
+  const headers = await getHeaders();
+  const res = await fetch(
+    `${BASE_URL}/subscriptions/purchase`,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        planId,
+        paymentMethod,
+      }),
+    }
+  );
+
+  return res.json();
+};
+
+export const getActiveSubscription = async () => {
+  const headers = await getHeaders();
+  const res = await fetch(`${BASE_URL}/subscriptions/driver`, { headers });
+  return res.json();
+};
+
 // 📋 Driver Bookings
 export const getDriverBookings = async () => {
   const headers = await getHeaders();

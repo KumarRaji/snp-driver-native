@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { getRequests, respondRequest } from '../api/driverApi';
+import { useFocusEffect } from '@react-navigation/native';
 
 const RequestsScreen = () => {
   const [tab, setTab] = useState<'NEW' | 'HISTORY'>('NEW');
@@ -16,9 +17,11 @@ const RequestsScreen = () => {
   const [hasPackage, setHasPackage] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchRequests();
+    }, [])
+  );
 
   const fetchRequests = async () => {
     try {

@@ -1,19 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { getTrips } from '../api/driverApi';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 
 const HomeScreen = () => {
   const [trips, setTrips] = useState<any[]>([]);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchTrips();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchTrips();
+    }, [])
+  );
 
   const fetchTrips = async () => {
     const data = await getTrips();
@@ -27,12 +34,71 @@ const HomeScreen = () => {
       t.status === 'ACCEPTED'
   );
 
+  const completeTrip = async (id: string) => {
+    try {
+      setLoadingId(id);
+      const token = await AsyncStorage.getItem('auth-token');
+
+      const res = await fetch(`https://drivemate.api.luisant.cloud/api/trips/${id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: 'COMPLETED' })
+      });
+
+      if (res.ok) {
+        Alert.alert('Success', 'Trip completed successfully!');
+        fetchTrips(); // Refresh the list to remove the completed trip
+      } else {
+        let errorMessage = `Failed to complete trip (Status: ${res.status})`;
+        try {
+          const data = await res.json();
+          errorMessage = data.message || data.error || errorMessage;
+        } catch (parseError) {
+          console.log('API returned non-JSON response (likely HTML error page).');
+        }
+        Alert.alert('Error', errorMessage);
+      }
+    } catch (e) {
+      console.log(e);
+      Alert.alert('Error', 'Network error occurred');
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  const handleCompletePress = (id: string) => {
+    Alert.alert(
+      'Complete Trip?',
+      'Are you sure you want to mark this trip as completed?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Yes', onPress: () => completeTrip(id) },
+      ]
+    );
+  };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <Text style={styles.title}>Ongoing Trips</Text>
 
       {activeTrips.length === 0 ? (
-        <Text style={styles.empty}>No active trips</Text>
+        <View style={styles.emptyBox}>
+
+          {/* Icon */}
+          <Text style={styles.emptyIcon}>📋</Text>
+
+          {/* Title */}
+          <Text style={styles.emptyTitle}>No active trips</Text>
+
+          {/* Subtitle */}
+          <Text style={styles.emptySub}>
+            Wait for admin to assign bookings
+          </Text>
+
+        </View>
       ) : (
         activeTrips.map((trip) => (
           <View key={trip.id} style={styles.card}>
@@ -62,8 +128,16 @@ const HomeScreen = () => {
             <Text style={styles.location}>{trip.dropLocation}</Text>
 
             {/* Button */}
-            <TouchableOpacity style={styles.button}>
-              <Text style={styles.buttonText}>Complete Trip</Text>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => handleCompletePress(trip.id)}
+              disabled={loadingId === trip.id}
+            >
+              {loadingId === trip.id ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Complete Trip</Text>
+              )}
             </TouchableOpacity>
 
           </View>
@@ -155,5 +229,33 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+  emptyBox: {
+    backgroundColor: '#f3f3f3',
+    borderRadius: 14,
+    padding: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+
+  emptyIcon: {
+    fontSize: 40,
+    marginBottom: 10,
+  },
+
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#444',
+    marginBottom: 5,
+  },
+
+  emptySub: {
+    fontSize: 13,
+    color: '#777',
+    textAlign: 'center',
   },
 });
