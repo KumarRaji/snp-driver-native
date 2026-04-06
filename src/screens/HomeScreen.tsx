@@ -82,7 +82,10 @@ const HomeScreen = () => {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <Text style={styles.title}>Ongoing Trips</Text>
+      <View style={styles.titleRow}>
+  <View style={styles.greenDot} />
+  <Text style={styles.title}>Ongoing Trips</Text>
+</View>
 
       {activeTrips.length === 0 ? (
         <View style={styles.emptyBox}>
@@ -298,4 +301,21 @@ const styles = StyleSheet.create({
     color: '#777',
     textAlign: 'center',
   },
+  titleRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginVertical: 15,
+},
+
+greenDot: {
+  width: 8,
+  height: 8,
+  borderRadius: 4,
+  backgroundColor: '#22c55e',
+  marginRight: 8,
+  shadowColor: '#22c55e',
+  shadowOpacity: 0.6,
+  shadowRadius: 4,
+  elevation: 4,
+},
 });
