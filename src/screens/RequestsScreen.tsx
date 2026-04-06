@@ -14,6 +14,7 @@ import {
   getActiveSubscription,
 } from '../api/driverApi';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { Feather } from '@expo/vector-icons';
 
 const RequestsScreen = () => {
   const [tab, setTab] = useState<'NEW' | 'HISTORY'>('NEW');
@@ -159,24 +160,81 @@ const RequestsScreen = () => {
         {/* NEW LIST */}
         {hasPackage && tab === 'NEW' &&
           newRequests.map((req) => (
-            <View key={req.id} style={styles.card}>
-              <Text style={styles.location}>
-                {req.booking.pickupLocation}
+            <View key={req.id} style={styles.webCard}>
+
+              {/* Date + Time */}
+              <Text style={styles.dateText}>
+                {req.booking?.startDateTime ? new Date(req.booking.startDateTime).toLocaleString() : `${req.booking?.startDate} • ${req.booking?.startTime}`}
               </Text>
 
-              <Text style={styles.arrow}>↓</Text>
-
-              <Text style={styles.location}>
-                {req.booking.dropLocation}
+              {/* Price */}
+              <Text style={styles.webPrice}>
+                ₹{req.booking?.estimateAmount}
               </Text>
 
-              <Text style={styles.price}>
-                ₹{req.booking.estimateAmount}
+              {/* Payment */}
+              <Text style={styles.payment}>
+                Payment: {req.booking?.paymentMethod || 'CASH'}
               </Text>
 
-              <View style={styles.row}>
+              {/* Service Type */}
+              <Text style={styles.serviceBadge}>
+                {req.booking?.serviceType || 'LOCAL_HOURLY'}
+              </Text>
+
+              {/* Timeline & Locations */}
+              <View style={styles.timelineRow}>
+
+                {/* LEFT DOT LINE */}
+                <View style={styles.timelineLeft}>
+                  {/* Pickup Icon */}
+                  <View style={styles.outerDot}>
+                    <View style={styles.innerDot} />
+                  </View>
+
+                  {/* Line */}
+                  <View style={styles.line} />
+                  
+                  {/* Drop Icon */}
+                  <Feather name="map-pin" size={14} color="#000" />
+                </View>
+
+                {/* RIGHT CONTENT */}
+                <View style={styles.timelineRight}>
+                  <Text style={styles.label}>Pickup</Text>
+                  <Text style={styles.locationDark}>
+                    {req.booking?.pickupLocation}
+                  </Text>
+
+                  <Text style={[styles.label, { marginTop: 10 }]}>Drop-off</Text>
+                  <Text style={styles.locationDark}>
+                    {req.booking?.dropLocation}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Customer */}
+              <View style={styles.customerBox}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>
+                    {req.booking?.customer?.name?.charAt(0)?.toUpperCase() || 'C'}
+                  </Text>
+                </View>
+
+                <View>
+                  <Text style={styles.customerName}>
+                    {req.booking?.customer?.name || 'Customer'}
+                  </Text>
+                  <Text style={styles.customerPhone}>
+                    {req.booking?.customer?.phone || ''}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Buttons */}
+              <View style={styles.btnRow}>
                 <TouchableOpacity
-                  style={styles.reject}
+                  style={styles.declineBtn}
                   onPress={() => handleAction(req.id, 'REJECTED')}
                   disabled={loadingId === req.id}
                 >
@@ -188,7 +246,7 @@ const RequestsScreen = () => {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.accept}
+                  style={styles.acceptBtn}
                   onPress={() => handleAction(req.id, 'ACCEPTED')}
                   disabled={loadingId === req.id}
                 >
@@ -199,6 +257,7 @@ const RequestsScreen = () => {
                   )}
                 </TouchableOpacity>
               </View>
+
             </View>
           ))}
 
@@ -231,17 +290,35 @@ const RequestsScreen = () => {
                 {req.booking?.serviceType || 'LOCAL_HOURLY'}
               </Text>
 
-              {/* Pickup */}
-              <Text style={styles.dotText}>Pickup</Text>
-              <Text style={styles.locationDark}>
-                {req.booking?.pickupLocation}
-              </Text>
+              {/* Timeline & Locations */}
+              <View style={styles.timelineRow}>
+                {/* LEFT DOT LINE */}
+                <View style={styles.timelineLeft}>
+                  {/* Pickup Icon */}
+                  <View style={styles.outerDot}>
+                    <View style={styles.innerDot} />
+                  </View>
 
-              {/* Drop */}
-              <Text style={styles.dotText}>Drop-off</Text>
-              <Text style={styles.locationDark}>
-                {req.booking?.dropLocation}
-              </Text>
+                  {/* Line */}
+                  <View style={styles.line} />
+                  
+                  {/* Drop Icon */}
+                  <Feather name="map-pin" size={14} color="#000" />
+                </View>
+
+                {/* RIGHT CONTENT */}
+                <View style={styles.timelineRight}>
+                  <Text style={styles.label}>Pickup</Text>
+                  <Text style={styles.locationDark}>
+                    {req.booking?.pickupLocation}
+                  </Text>
+
+                  <Text style={[styles.label, { marginTop: 10 }]}>Drop-off</Text>
+                  <Text style={styles.locationDark}>
+                    {req.booking?.dropLocation}
+                  </Text>
+                </View>
+              </View>
 
             </View>
           ))}
@@ -382,38 +459,122 @@ const styles = StyleSheet.create({
     color: '#777',
   },
 
-  /* CARD */
-  card: {
-    backgroundColor: '#000',
-    padding: 15,
-    borderRadius: 15,
-    marginTop: 10,
+  /* WEB CARD */
+  webCard: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#eee',
   },
-
-  location: { color: '#fff', fontWeight: 'bold' },
-  arrow: { color: '#fff', textAlign: 'center' },
-  price: { color: '#0f0', marginTop: 10 },
-
-  row: {
+  dateText: {
+    fontSize: 12,
+    color: '#777',
+  },
+  webPrice: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginTop: 6,
+  },
+  payment: {
+    fontSize: 13,
+    color: '#777',
+    marginTop: 2,
+  },
+  serviceBadge: {
+    backgroundColor: '#dbeafe',
+    color: '#2563eb',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 8,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    marginTop: 12,
+  },
+  timelineLeft: {
+    alignItems: 'center',
+    marginRight: 10,
+    paddingTop: 4,
+  },
+  timelineRight: {
+    flex: 1,
+  },
+  line: {
+    width: 1.5,
+    height: 30,
+    backgroundColor: '#ccc',
+    marginVertical: 4,
+  },
+  label: {
+    fontSize: 12,
+    color: '#777',
+  },
+  outerDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  innerDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#000',
+  },
+  customerBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    padding: 10,
+    borderRadius: 10,
+    marginTop: 12,
+    gap: 10,
+  },
+  avatar: {
+    width: 35,
+    height: 35,
+    borderRadius: 18,
+    backgroundColor: '#ddd',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    fontWeight: 'bold',
+  },
+  customerName: {
+    fontWeight: 'bold',
+  },
+  customerPhone: {
+    fontSize: 12,
+    color: '#777',
+  },
+  btnRow: {
     flexDirection: 'row',
     marginTop: 12,
     gap: 10,
   },
-
-  reject: {
+  declineBtn: {
     flex: 1,
-    backgroundColor: '#eee',
-    padding: 10,
+    backgroundColor: '#e5e5e5',
+    paddingVertical: 12,
+    borderRadius: 12,
     alignItems: 'center',
-    borderRadius: 8,
   },
-
-  accept: {
+  acceptBtn: {
     flex: 1,
     backgroundColor: '#000',
-    padding: 10,
+    paddingVertical: 12,
+    borderRadius: 12,
     alignItems: 'center',
-    borderRadius: 8,
   },
 
   /* HISTORY CARD */
@@ -463,13 +624,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
     overflow: 'hidden',
   },
-  dotText: {
-    marginTop: 10,
-    fontSize: 11,
-    color: '#666',
-  },
   locationDark: {
-    fontWeight: 'bold',
+    fontWeight: '600',
+    fontSize: 14,
     marginTop: 2,
   },
 });

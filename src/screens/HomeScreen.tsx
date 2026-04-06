@@ -11,6 +11,7 @@ import {
 import { getTrips } from '../api/driverApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
+import { Feather } from '@expo/vector-icons';
 
 const HomeScreen = () => {
   const [trips, setTrips] = useState<any[]>([]);
@@ -118,13 +119,20 @@ const HomeScreen = () => {
             {/* Divider */}
             <View style={styles.divider} />
 
-            {/* FROM */}
-            <Text style={styles.label}>FROM</Text>
-            <Text style={styles.location}>{trip.pickupLocation}</Text>
-
-            {/* TO */}
-            <Text style={styles.label}>TO</Text>
-            <Text style={styles.location}>{trip.dropLocation}</Text>
+            {/* Timeline & Locations */}
+            <View style={styles.timelineRow}>
+              <View style={styles.timelineLeft}>
+                <View style={styles.outerDot}><View style={styles.innerDot} /></View>
+                <View style={styles.line} />
+                <Feather name="map-pin" size={14} color="#fff" />
+              </View>
+              <View style={styles.timelineRight}>
+                <Text style={styles.label}>FROM</Text>
+                <Text style={styles.location}>{trip.pickupLocation}</Text>
+                <Text style={[styles.label, { marginTop: 10 }]}>TO</Text>
+                <Text style={styles.location}>{trip.dropLocation}</Text>
+              </View>
+            </View>
 
             {/* Button */}
             <TouchableOpacity
@@ -207,7 +215,6 @@ const styles = StyleSheet.create({
   label: {
     color: '#888',
     fontSize: 11,
-    marginTop: 8,
   },
 
   location: {
@@ -228,6 +235,40 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+
+  timelineRow: {
+    flexDirection: 'row',
+    marginTop: 12,
+  },
+  timelineLeft: {
+    alignItems: 'center',
+    marginRight: 10,
+    paddingTop: 4,
+  },
+  timelineRight: {
+    flex: 1,
+  },
+  outerDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  innerDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#fff',
+  },
+  line: {
+    width: 1.5,
+    height: 30,
+    backgroundColor: '#444',
+    marginVertical: 4,
   },
   emptyBox: {
     backgroundColor: '#f3f3f3',

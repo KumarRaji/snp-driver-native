@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { getTrips } from '../api/driverApi';
 import { useFocusEffect } from '@react-navigation/native';
+import { Feather } from '@expo/vector-icons';
 
 const TripsScreen = () => {
   const [trips, setTrips] = useState<any[]>([]);
@@ -88,18 +89,27 @@ const TripsScreen = () => {
               </Text>
             </View>
 
-            <Text style={styles.label}>PICKUP</Text>
-            <Text style={styles.location}>{trip.pickupLocation}</Text>
+            {/* Timeline & Locations */}
+            <View style={styles.timelineRow}>
+              <View style={styles.timelineLeft}>
+                <View style={styles.outerDot}><View style={styles.innerDot} /></View>
+                <View style={styles.line} />
+                <Feather name="map-pin" size={14} color="#000" />
+              </View>
+              <View style={styles.timelineRight}>
+                <Text style={styles.label}>PICKUP</Text>
+                <Text style={styles.location}>{trip.pickupLocation}</Text>
+                <Text style={[styles.label, { marginTop: 10 }]}>DROP</Text>
+                <Text style={styles.location}>{trip.dropLocation}</Text>
+              </View>
+            </View>
 
-            <Text style={styles.label}>DROP</Text>
-            <Text style={styles.location}>{trip.dropLocation}</Text>
-
-            <Text style={styles.label}>DATE & TIME</Text>
+            <Text style={[styles.label, { marginTop: 10 }]}>DATE & TIME</Text>
             <Text style={styles.value}>
               {trip.startDate || 'N/A'} at {trip.startTime || 'N/A'}
             </Text>
 
-            <Text style={styles.label}>EST. EARNINGS</Text>
+            <Text style={[styles.label, { marginTop: 10 }]}>EST. EARNINGS</Text>
             <Text style={styles.earnings}>₹{trip.estimateAmount || 0}</Text>
           </View>
         ))
@@ -125,13 +135,20 @@ const TripsScreen = () => {
               </View>
             </View>
 
-            {/* FROM */}
-            <Text style={styles.label}>FROM</Text>
-            <Text style={styles.location}>{trip.pickupLocation}</Text>
-
-            {/* TO */}
-            <Text style={styles.label}>TO</Text>
-            <Text style={styles.location}>{trip.dropLocation}</Text>
+            {/* Timeline & Locations */}
+            <View style={styles.timelineRow}>
+              <View style={styles.timelineLeft}>
+                <View style={styles.outerDot}><View style={styles.innerDot} /></View>
+                <View style={styles.line} />
+                <Feather name="map-pin" size={14} color="#000" />
+              </View>
+              <View style={styles.timelineRight}>
+                <Text style={styles.label}>FROM</Text>
+                <Text style={styles.location}>{trip.pickupLocation}</Text>
+                <Text style={[styles.label, { marginTop: 10 }]}>TO</Text>
+                <Text style={styles.location}>{trip.dropLocation}</Text>
+              </View>
+            </View>
 
             {/* Bottom Row */}
             <View style={styles.bottomRow}>
@@ -221,7 +238,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 11,
     color: '#888',
-    marginTop: 10,
   },
 
   location: {
@@ -280,5 +296,39 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#000',
+  },
+
+  timelineRow: {
+    flexDirection: 'row',
+    marginTop: 12,
+  },
+  timelineLeft: {
+    alignItems: 'center',
+    marginRight: 10,
+    paddingTop: 4,
+  },
+  timelineRight: {
+    flex: 1,
+  },
+  outerDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  innerDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#000',
+  },
+  line: {
+    width: 1.5,
+    height: 30,
+    backgroundColor: '#ccc',
+    marginVertical: 4,
   },
 });
