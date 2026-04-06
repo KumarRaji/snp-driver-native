@@ -247,7 +247,7 @@ const ProfileScreen = () => {
                   <Image source={{ uri: doc.uri }} style={styles.docImage} resizeMode="cover" />
                 ) : (
                   <View style={styles.docMissing}>
-                    <Text style={{ color: '#999', fontSize: 12 }}>ADD</Text>
+                    <Text style={{ color: '#999', fontSize: 12 }}>Not Uploaded</Text>
                   </View>
                 )}
               </View>
