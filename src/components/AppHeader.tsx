@@ -1,8 +1,8 @@
 // src/components/AppHeader.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -13,13 +13,20 @@ const AppHeader = () => {
   const [name, setName] = useState('');
   const [showMenu, setShowMenu] = useState(false);
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile();
+    }, [])
+  );
 
   const fetchProfile = async () => {
     try {
       const token = await AsyncStorage.getItem('auth-token');
+
+      if (!token) {
+        console.log('❌ No token found');
+        return;
+      }
 
       const res = await fetch(
         'https://drivemate.api.luisant.cloud/api/auth/profile',
@@ -31,15 +38,24 @@ const AppHeader = () => {
       );
 
       const data = await res.json();
-      setName(data?.name || '');
+      
+      console.log('PROFILE DATA:', data); // ✅ DEBUG
+      
+      const fullName = data?.user?.name || data?.name || '';
+      setName(fullName);
     } catch (e) {
-      console.log(e);
+      console.log('Profile error:', e);
     }
   };
 
   const handleLogout = async () => {
     await AsyncStorage.removeItem('auth-token');
     navigation.replace('Login');
+  };
+
+  const getInitial = (fullName: string) => {
+    if (!fullName) return 'D';
+    return fullName.trim().charAt(0).toUpperCase();
   };
 
   return (
@@ -50,7 +66,7 @@ const AppHeader = () => {
         {/* Profile Circle */}
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
-            {name ? name.charAt(0).toUpperCase() : 'N'}
+            {getInitial(name)}
           </Text>
         </View>
 
