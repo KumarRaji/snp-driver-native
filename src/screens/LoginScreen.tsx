@@ -100,6 +100,7 @@ const LoginScreen = () => {
                     <TextInput
                         style={styles.input}
                         placeholder="9876543210"
+                        placeholderTextColor="#999"
                         keyboardType="phone-pad"
                         value={phone}
                         onChangeText={setPhone}
@@ -109,6 +110,7 @@ const LoginScreen = () => {
                     <TextInput
                         style={styles.input}
                         placeholder="••••••••"
+                        placeholderTextColor="#999"
                         secureTextEntry
                         value={password}
                         onChangeText={setPassword}

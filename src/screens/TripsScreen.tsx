@@ -73,7 +73,10 @@ const TripsScreen = () => {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       
       {/* 🔥 Upcoming Section */}
-      <Text style={styles.header}>Upcoming & Ongoing Trips</Text>
+      <View style={styles.titleRow}>
+        <View style={styles.greenDot} />
+        <Text style={styles.header}>Upcoming & Ongoing Trips</Text>
+      </View>
 
       {upcomingTrips.length === 0 ? (
         <View style={styles.emptyBox}>
@@ -116,7 +119,7 @@ const TripsScreen = () => {
       )}
 
       {/* 🔥 Completed Section */}
-      <Text style={[styles.header, { marginTop: 20 }]}>Completed Trips</Text>
+      <Text style={[styles.header, { marginTop: 20, marginBottom: 15 }]}>Completed Trips</Text>
 
       {completedTrips.length === 0 ? (
         <Text style={styles.emptySmall}>No completed trips yet.</Text>
@@ -179,7 +182,23 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 18,
     fontWeight: 'bold',
+  },
+
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginVertical: 15,
+  },
+  greenDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#22c55e',
+    marginRight: 8,
+    shadowColor: '#22c55e',
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
+    elevation: 4,
   },
 
   emptyBox: {

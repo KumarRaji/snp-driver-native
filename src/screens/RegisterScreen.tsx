@@ -75,7 +75,7 @@ const RegisterScreen = () => {
 
     // 🚀 Register
     const handleRegister = async () => {
-        if (!form.name || !form.phone || !form.password) {
+        if (!form.name || !form.phone || !form.password || !form.aadharNo || !form.licenseNo) {
             Alert.alert('Error', 'Please fill required fields');
             return;
         }
@@ -187,12 +187,14 @@ const RegisterScreen = () => {
                                 { key: 'alternateMobile2', label: 'Alternate Phone 2' },
                                 { key: 'alternateMobile3', label: 'Alternate Phone 3' },
                                 { key: 'alternateMobile4', label: 'Alternate Phone 4' },
-                                { key: 'gpayNo', label: 'UPI ID (GPay/PhonePe)' },
+                                { key: 'gpayNo', label: 'UPI ID (GPay/PhonePe)', placeholder: 'yourname@upi' },
                             ].map((item) => (
                                 <View key={item.key}>
                                     <Text style={styles.label}>{item.label}</Text>
                                     <TextInput
                                         style={styles.input}
+                                        placeholder={item.placeholder}
+                                        placeholderTextColor="#999"
                                         secureTextEntry={item.key === 'password'}
                                         value={(form as any)[item.key]}
 
