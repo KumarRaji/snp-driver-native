@@ -40,12 +40,23 @@ const ProfileScreen = () => {
       const headers = await getHeaders();
 
       const res = await fetch(`${BASE_URL}/auth/profile`, { headers });
-      const data = await res.json();
+      let data = null;
+      // Safely check if the response is JSON before parsing
+      if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+        data = await res.json();
+      } else {
+        console.log('Profile API returned an error or non-JSON response.');
+      }
 
       const subRes = await fetch(`${BASE_URL}/subscriptions/driver`, {
         headers,
       });
-      const subData = await subRes.json();
+      let subData = null;
+      if (subRes.ok && subRes.headers.get('content-type')?.includes('application/json')) {
+        subData = await subRes.json();
+      } else {
+        console.log('Subscription API returned an error or non-JSON response.');
+      }
 
       setProfile(data?.user || data);
       setSubscription(subData);

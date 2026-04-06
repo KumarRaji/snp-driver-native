@@ -8,6 +8,7 @@ import {
   Modal,
   Alert,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { getPackages, purchaseSubscription, getActiveSubscription } from '../api/driverApi';
 
 const PackagesScreen = () => {
@@ -16,6 +17,7 @@ const PackagesScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activePlan, setActivePlan] = useState<any>(null);
+  const navigation = useNavigation<any>();
 
   useEffect(() => {
     fetchPackages();
@@ -70,7 +72,12 @@ const PackagesScreen = () => {
 
       closeModal();
 
-      Alert.alert('Success', 'Subscription Activated Successfully ✅');
+      Alert.alert('Success', 'Subscription Activated Successfully ✅', [
+        {
+          text: 'OK',
+          onPress: () => navigation.navigate('REQUESTS'),
+        },
+      ]);
     } catch (err) {
       console.error(err);
       Alert.alert('Error', 'Payment Failed ❌');

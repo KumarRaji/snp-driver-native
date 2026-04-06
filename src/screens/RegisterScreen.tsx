@@ -132,7 +132,7 @@ const RegisterScreen = () => {
 
                 Alert.alert('Success', 'Registration successful');
 
-                navigation.replace('Home');
+                navigation.replace('Login');
             } else {
                 Alert.alert(
                     'Error',
