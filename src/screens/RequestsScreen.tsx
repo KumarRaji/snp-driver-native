@@ -8,7 +8,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { getRequests, respondRequest } from '../api/driverApi';
+import { getRequests, respondRequest, getActiveSubscription } from '../api/driverApi';
 import { useFocusEffect } from '@react-navigation/native';
 
 const RequestsScreen = () => {
@@ -16,6 +16,7 @@ const RequestsScreen = () => {
   const [requests, setRequests] = useState<any[]>([]);
   const [hasPackage, setHasPackage] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [activeSub, setActiveSub] = useState<any>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -27,7 +28,15 @@ const RequestsScreen = () => {
     try {
       const data = await getRequests();
       setRequests(data.requests || []);
-      setHasPackage(data.requests && data.requests.length > 0);
+     const sub = await getActiveSubscription();
+
+const hasActivePackage =
+  sub &&
+  (sub.status === 'ACTIVE' || sub.status === 'SUCCESS') &&
+  new Date(sub.endDate) > new Date();
+
+setHasPackage(hasActivePackage);
+setActiveSub(sub);
     } catch (e) {
       console.log(e);
     }
@@ -96,6 +105,30 @@ const RequestsScreen = () => {
             <TouchableOpacity style={styles.packageBtn}>
               <Text style={{ color: '#fff' }}>Go to Packages</Text>
             </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ACTIVE PACKAGE CARD */}
+        {hasPackage && (
+          <View style={styles.activeCard}>
+            <View style={styles.activeRow}>
+              <Text style={styles.activeIcon}>✔</Text>
+              <View>
+                <Text style={styles.activeTitle}>Active Package</Text>
+                <Text style={styles.activeName}>
+                  {activeSub?.plan?.name || 'Package Active'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.greenDot} />
+          </View>
+        )}
+
+        {/* EMPTY STATE */}
+        {hasPackage && requests.length === 0 && (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyIcon}>📥</Text>
+            <Text style={styles.emptyTitle}>No pending requests</Text>
           </View>
         )}
 
@@ -239,5 +272,51 @@ const styles = StyleSheet.create({
     padding: 10,
     alignItems: 'center',
     borderRadius: 8,
+  },
+
+  activeCard: {
+    backgroundColor: '#f6f6f6',
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 15,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  activeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  activeIcon: {
+    fontSize: 18,
+    color: 'green',
+  },
+  activeTitle: {
+    fontSize: 12,
+    color: '#777',
+  },
+  activeName: {
+    fontWeight: 'bold',
+  },
+  greenDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'green',
+  },
+  emptyBox: {
+    backgroundColor: '#f3f3f3',
+    padding: 25,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  emptyIcon: {
+    fontSize: 30,
+    marginBottom: 5,
+  },
+  emptyTitle: {
+    color: '#777',
   },
 });

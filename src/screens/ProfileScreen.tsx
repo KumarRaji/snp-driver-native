@@ -59,6 +59,20 @@ const ProfileScreen = () => {
     return <ActivityIndicator style={{ marginTop: 50 }} />;
   }
 
+  const getDaysLeft = () => {
+    if (!subscription?.endDate) return null;
+
+    const end = new Date(subscription.endDate).getTime();
+    const now = new Date().getTime();
+
+    const diff = end - now;
+
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+    return days > 0 ? days : 0;
+  };
+  
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       <AppHeader />
@@ -109,16 +123,27 @@ const ProfileScreen = () => {
 
         {/* SUBSCRIPTION */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Subscription</Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Current Plan</Text>
+            {subscription?.plan && (
+              <View style={styles.paymentBadge}>
+                <Text style={styles.paymentBadgeText}>{subscription.paymentMethod}</Text>
+              </View>
+            )}
+          </View>
 
           {subscription?.plan ? (
             <>
-              <Text style={styles.value}>
+              <Text style={[styles.value, { marginTop: 4 }]}>
                 {subscription.plan.name}
               </Text>
-              <Text style={styles.subText}>
-                {subscription.paymentMethod}
-              </Text>
+
+              {/* 🔥 DAYS LEFT BADGE */}
+              {getDaysLeft() !== null && (
+                <View style={[styles.daysBadge, { alignSelf: 'flex-start', marginTop: 10 }]}>
+                  <Text style={styles.daysText}>{getDaysLeft()} days left</Text>
+                </View>
+              )}
             </>
           ) : (
             <View>
@@ -318,6 +343,21 @@ const styles = StyleSheet.create({
     color: '#666',
   },
 
+  paymentBadge: {
+    backgroundColor: '#666',
+    borderColor: '#666',
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+
+  paymentBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+
   noPlanText: {
     color: '#666',
     marginBottom: 12,
@@ -333,6 +373,26 @@ const styles = StyleSheet.create({
 
   planBtnText: {
     color: '#fff',
+    fontWeight: 'bold',
+  },
+
+  planRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 5,
+  },
+
+  daysBadge: {
+    backgroundColor: '#d1fae5',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+
+  daysText: {
+    color: '#065f46',
+    fontSize: 12,
     fontWeight: 'bold',
   },
 
