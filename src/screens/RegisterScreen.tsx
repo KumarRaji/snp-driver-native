@@ -121,7 +121,15 @@ const RegisterScreen = () => {
                 }
             );
 
-            const data = await response.json();
+            const text = await response.text();
+            let data: any = null;
+            
+            try {
+                data = JSON.parse(text);
+            } catch {
+                console.error('Register API Non-JSON response:', text);
+                throw new Error('Server returned an invalid format. Please try again.');
+            }
 
             if (response.ok) {
                 if (data.token) {

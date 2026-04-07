@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { getPackages, purchaseSubscription, getActiveSubscription } from '../api/driverApi';
+import { getPackages, purchaseSubscription, getActiveSubscription, handleLogoutIfRequired } from '../api/driverApi';
 
 const PackagesScreen = () => {
   const [packages, setPackages] = useState<any[]>([]);
@@ -26,12 +26,14 @@ const PackagesScreen = () => {
 
   const fetchPackages = async () => {
     const data = await getPackages();
+    if (await handleLogoutIfRequired(data, navigation)) return;
     setPackages(data.packages || []);
   };
 
   const fetchActivePlan = async () => {
     try {
       const data = await getActiveSubscription();
+      if (await handleLogoutIfRequired(data, navigation)) return;
       setActivePlan(data);
     } catch (e) {
       console.error('Fetch Active Plan Error:', e);
@@ -56,6 +58,8 @@ const PackagesScreen = () => {
         selectedPackage.id, // ⚠️ IMPORTANT: Maps to what your backend expects
         method
       );
+
+      if (await handleLogoutIfRequired(res, navigation)) return;
 
       if (res?.error || res?.success === false) {
         Alert.alert('Error', res.error || res.message || 'Payment Failed ❌');

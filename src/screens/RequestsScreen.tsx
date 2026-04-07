@@ -12,6 +12,7 @@ import {
   getRequests,
   respondRequest,
   getActiveSubscription,
+  handleLogoutIfRequired,
 } from '../api/driverApi';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
@@ -48,9 +49,11 @@ const RequestsScreen = () => {
       setLoadingSub(true);
 
       const data = await getRequests();
+      if (await handleLogoutIfRequired(data, navigation)) return;
       setRequests(data.requests || []);
 
       const sub = await getActiveSubscription();
+      if (await handleLogoutIfRequired(sub, navigation)) return;
 
       const hasActivePackage =
         sub &&
@@ -69,7 +72,8 @@ const RequestsScreen = () => {
   const performAction = async (id: string, action: 'ACCEPTED' | 'REJECTED') => {
     try {
       setLoadingId(id);
-      await respondRequest(id, action);
+      const res = await respondRequest(id, action);
+      if (await handleLogoutIfRequired(res, navigation)) return;
       
       // 🔥 REMOVE instantly from NEW list
       setRequests((prev) =>

@@ -14,6 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import AppHeader from '../components/AppHeader';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import { getProfile, getActiveSubscription, handleLogoutIfRequired } from '../api/driverApi';
 
 const BASE_URL = 'https://drivemate.api.luisant.cloud/api';
 
@@ -27,36 +28,13 @@ const ProfileScreen = () => {
     fetchProfile();
   }, []);
 
-  const getHeaders = async () => {
-    const token = await AsyncStorage.getItem('auth-token');
-    return {
-      'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
-    };
-  };
-
   const fetchProfile = async () => {
     try {
-      const headers = await getHeaders();
+      const data = await getProfile();
+      if (await handleLogoutIfRequired(data, navigation)) return;
 
-      const res = await fetch(`${BASE_URL}/auth/profile`, { headers });
-      let data = null;
-      // Safely check if the response is JSON before parsing
-      if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
-        data = await res.json();
-      } else {
-        console.error('Profile API returned an error or non-JSON response.');
-      }
-
-      const subRes = await fetch(`${BASE_URL}/subscriptions/driver`, {
-        headers,
-      });
-      let subData = null;
-      if (subRes.ok && subRes.headers.get('content-type')?.includes('application/json')) {
-        subData = await subRes.json();
-      } else {
-        console.error('Subscription API returned an error or non-JSON response.');
-      }
+      const subData = await getActiveSubscription();
+      if (await handleLogoutIfRequired(subData, navigation)) return;
 
       setProfile(data?.user || data);
       setSubscription(subData);

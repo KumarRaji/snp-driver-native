@@ -5,12 +5,13 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
-import { getTrips } from '../api/driverApi';
-import { useFocusEffect } from '@react-navigation/native';
+import { getTrips, handleLogoutIfRequired } from '../api/driverApi';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 
 const TripsScreen = () => {
   const [trips, setTrips] = useState<any[]>([]);
+  const navigation = useNavigation<any>();
 
   useFocusEffect(
     useCallback(() => {
@@ -21,6 +22,8 @@ const TripsScreen = () => {
   const fetchTrips = async () => {
     try {
       const data = await getTrips();
+
+      if (await handleLogoutIfRequired(data, navigation)) return;
   
       const sortedTrips = (data?.trips || []).sort((a: any, b: any) => {
         const getPriority = (status: string) => {

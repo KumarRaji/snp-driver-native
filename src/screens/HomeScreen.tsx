@@ -9,9 +9,8 @@ import {
   ActivityIndicator,
   Modal,
 } from 'react-native';
-import { getTrips } from '../api/driverApi';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from '@react-navigation/native';
+import { getTrips, handleLogoutIfRequired, completeTripAPI } from '../api/driverApi';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 
 const HomeScreen = () => {
@@ -19,6 +18,7 @@ const HomeScreen = () => {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState<any>(null);
+  const navigation = useNavigation<any>();
 
   useFocusEffect(
     useCallback(() => {
@@ -29,6 +29,7 @@ const HomeScreen = () => {
   const fetchTrips = async () => {
     try {
       const data = await getTrips();
+      if (await handleLogoutIfRequired(data, navigation)) return;
       setTrips(data?.bookings || data?.trips || []);
     } catch (error) {
       console.error('Error fetching trips:', error);
@@ -45,25 +46,17 @@ const HomeScreen = () => {
   const completeTrip = async (id: string) => {
     try {
       setLoadingId(id);
-      const token = await AsyncStorage.getItem('auth-token');
+      const data = await completeTripAPI(id);
+      
+      if (await handleLogoutIfRequired(data, navigation)) return;
 
-      const res = await fetch(`https://drivemate.api.luisant.cloud/api/trips/${id}/complete`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.success) {
+      if (data?.success) {
         Alert.alert('Success', 'Trip completed successfully!');
         setModalVisible(false);
         setSelectedTrip(null);
         fetchTrips(); // Refresh the list to remove the completed trip
       } else {
-        Alert.alert('Error', data.error || data.message || 'Failed to complete trip');
+        Alert.alert('Error', data?.error || data?.message || 'Failed to complete trip');
       }
     } catch (e) {
       console.error('Complete Trip Error:', e);

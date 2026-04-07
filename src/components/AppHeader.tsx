@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getProfile, handleLogoutIfRequired } from '../api/driverApi';
 
 const AppHeader = () => {
   const navigation = useNavigation<any>();
@@ -19,41 +20,21 @@ const AppHeader = () => {
     }, [])
   );
 
-  const fetchProfile = async () => {
-    try {
-      const token = await AsyncStorage.getItem('auth-token');
-
-      if (!token) {
-        console.warn('❌ No token found');
-        return;
-      }
-
-      const res = await fetch(
-        'https://drivemate.api.luisant.cloud/api/auth/profile',
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      // Safely check if the response is JSON before parsing
-      if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
-        const data = await res.json();
-        
-        const fullName = data?.user?.name || data?.name || '';
-        setName(fullName);
-      } else {
-        console.error('AppHeader Profile API returned an error or non-JSON response.');
-      }
-    } catch (e) {
-      console.error('Profile error:', e);
-    }
-  };
-
   const handleLogout = async () => {
     await AsyncStorage.removeItem('auth-token');
     navigation.replace('Login');
+  };
+
+  const fetchProfile = async () => {
+    try {
+      const data = await getProfile();
+      if (await handleLogoutIfRequired(data, navigation)) return;
+
+      const fullName = data?.user?.name || data?.name || '';
+      setName(fullName);
+    } catch (e) {
+      console.error('Profile error:', e);
+    }
   };
 
   const getInitial = (fullName: string) => {
