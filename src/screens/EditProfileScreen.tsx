@@ -92,18 +92,21 @@ const EditProfileScreen = () => {
       const uploadedPan = images.panPhoto ? await uploadFile(images.panPhoto) : undefined;
       const uploadedAadhar = images.aadharPhoto ? await uploadFile(images.aadharPhoto) : undefined;
 
-      const payload = {
-        ...form,
+      // Extract password so it isn't automatically spread into the payload
+      const { password, ...restForm } = form;
+
+      const payload: any = {
+        ...restForm,
         ...(uploadedPhoto && { photo: uploadedPhoto }),
         ...(uploadedDl && { dlPhoto: uploadedDl }),
         ...(uploadedPan && { panPhoto: uploadedPan }),
         ...(uploadedAadhar && { aadharPhoto: uploadedAadhar }),
       };
 
-    // Do not send empty password if the user isn't trying to change it
-    if (!payload.password) {
-      delete (payload as any).password;
-    }
+      // Only append the password to the payload if the user typed a new one
+      if (password && password.trim().length > 0) {
+        payload.password = password.trim();
+      }
 
       // Submitting the updated details to the server
       const res = await fetch(`${BASE_URL}/auth/profile`, {
@@ -152,6 +155,7 @@ const EditProfileScreen = () => {
           { key: 'name', label: 'Full Name' },
           { key: 'email', label: 'Email', type: 'email-address' },
           { key: 'phone', label: 'Phone', type: 'phone-pad' },
+          { key: 'password', label: 'Change Password', secureTextEntry: true, placeholder: 'Enter new password (leave blank to keep current)', autoCapitalize: 'none', autoCorrect: false },
           { key: 'aadharNo', label: 'Aadhar Number', type: 'numeric' },
           { key: 'licenseNo', label: 'License Number' },
           { key: 'alternateMobile1', label: 'Alternate Phone 1', type: 'phone-pad' },
@@ -167,6 +171,11 @@ const EditProfileScreen = () => {
               value={(form as any)[field.key]}
               onChangeText={(text) => handleChange(field.key, text)}
               keyboardType={(field.type as any) || 'default'}
+              secureTextEntry={(field as any).secureTextEntry}
+              placeholder={(field as any).placeholder}
+              placeholderTextColor={(field as any).placeholder ? '#999' : undefined}
+              autoCapitalize={(field as any).autoCapitalize}
+              autoCorrect={(field as any).autoCorrect}
             />
           </View>
         ))}
@@ -198,19 +207,6 @@ const EditProfileScreen = () => {
               </TouchableOpacity>
             );
           })}
-        </View>
-
-        {/* Change Password */}
-        <View style={[styles.inputGroup, { marginTop: 25 }]}>
-          <Text style={styles.label}>Change Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter new password (leave blank to keep current)"
-            placeholderTextColor="#999"
-            secureTextEntry
-            value={form.password}
-            onChangeText={(text) => handleChange('password', text)}
-          />
         </View>
       </ScrollView>
 
