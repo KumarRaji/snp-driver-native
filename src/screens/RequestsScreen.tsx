@@ -34,6 +34,7 @@ const RequestsScreen = () => {
   const [hasPackage, setHasPackage] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [activeSub, setActiveSub] = useState<any>(null);
+  const [loadingSub, setLoadingSub] = useState(true);
   const navigation = useNavigation<any>();
 
   useFocusEffect(
@@ -44,6 +45,8 @@ const RequestsScreen = () => {
 
   const fetchRequests = async () => {
     try {
+      setLoadingSub(true);
+
       const data = await getRequests();
       setRequests(data.requests || []);
 
@@ -58,6 +61,8 @@ const RequestsScreen = () => {
       setActiveSub(sub);
     } catch (e) {
       console.log(e);
+    } finally {
+      setLoadingSub(false);
     }
   };
 
@@ -123,8 +128,15 @@ const RequestsScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* ❌ NO PACKAGE */}
-        {!hasPackage && (
+        {loadingSub ? (
+          <View style={{ paddingTop: 10 }}>
+            <View style={{ height: 80, backgroundColor: '#eee', borderRadius: 12, marginBottom: 15 }} />
+            <View style={{ height: 180, backgroundColor: '#eee', borderRadius: 14, marginBottom: 15 }} />
+          </View>
+        ) : (
+          <>
+          {/* ❌ NO PACKAGE */}
+          {!hasPackage && (
           <View style={styles.warningCard}>
             <Text style={styles.warningIcon}>⚠</Text>
 
@@ -334,6 +346,8 @@ const RequestsScreen = () => {
 
             </View>
           ))}
+          </>
+        )}
       </ScrollView>
     </View>
   );
