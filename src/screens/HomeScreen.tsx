@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { getTrips } from '../api/driverApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -16,6 +17,8 @@ import { Feather } from '@expo/vector-icons';
 const HomeScreen = () => {
   const [trips, setTrips] = useState<any[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState<any>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -56,6 +59,8 @@ const HomeScreen = () => {
 
       if (res.ok && data.success) {
         Alert.alert('Success', 'Trip completed successfully!');
+        setModalVisible(false);
+        setSelectedTrip(null);
         fetchTrips(); // Refresh the list to remove the completed trip
       } else {
         Alert.alert('Error', data.error || data.message || 'Failed to complete trip');
@@ -69,22 +74,20 @@ const HomeScreen = () => {
   };
 
   const handleCompletePress = (trip: any) => {
-    Alert.alert(
-      'Complete Trip',
-      `Mark this trip as completed?\n\nFrom: ${trip.pickupLocation}\nTo: ${trip.dropLocation}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'OK', onPress: () => completeTrip(trip.id) },
-      ]
-    );
+    setSelectedTrip(trip);
+    setModalVisible(true);
   };
 
   return (
+    <View style={{ flex: 1, backgroundColor: '#F4F4F4' }}>
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.titleRow}>
-  <View style={styles.greenDot} />
-  <Text style={styles.title}>Ongoing Trips</Text>
-</View>
+      
+      {activeTrips.length > 0 && (
+        <View style={styles.titleRow}>
+          <View style={styles.greenDot} />
+          <Text style={styles.title}>Ongoing Trips</Text>
+        </View>
+      )}
 
       {activeTrips.length === 0 ? (
         <View style={styles.emptyBox}>
@@ -153,6 +156,60 @@ const HomeScreen = () => {
         ))
       )}
     </ScrollView>
+
+    {/* 🔥 Custom Complete Trip Modal */}
+    <Modal visible={modalVisible} transparent animationType="fade">
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Complete Trip</Text>
+          <Text style={styles.modalSub}>Mark this trip as completed?</Text>
+
+          {selectedTrip && (
+            <View style={styles.modalTimelineRow}>
+              <View style={styles.modalTimelineLeft}>
+                <View style={styles.modalOuterDot}><View style={styles.modalInnerDot} /></View>
+                <View style={styles.modalLine} />
+                <Feather name="map-pin" size={14} color="#000" />
+              </View>
+              <View style={styles.timelineRight}>
+                <Text style={styles.modalLabel}>FROM</Text>
+                <Text style={styles.modalLocation}>{selectedTrip.pickupLocation}</Text>
+                <Text style={[styles.modalLabel, { marginTop: 6 }]}>TO</Text>
+                <Text style={styles.modalLocation}>{selectedTrip.dropLocation}</Text>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.modalBtnRow}>
+            <TouchableOpacity
+              style={styles.modalCancelBtn}
+              onPress={() => {
+                setModalVisible(false);
+                setSelectedTrip(null);
+              }}
+              disabled={loadingId === selectedTrip?.id}
+            >
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalConfirmBtn}
+              onPress={() => {
+                if (selectedTrip) completeTrip(selectedTrip.id);
+              }}
+              disabled={loadingId === selectedTrip?.id}
+            >
+              {loadingId === selectedTrip?.id ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.modalConfirmText}>Complete</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+    </View>
   );
 };
 
@@ -316,5 +373,98 @@ greenDot: {
   shadowOpacity: 0.6,
   shadowRadius: 4,
   elevation: 4,
+},
+
+/* Modal Styles */
+modalOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.5)',
+  justifyContent: 'center',
+  padding: 20,
+},
+modalContent: {
+  backgroundColor: '#fff',
+  borderRadius: 16,
+  padding: 20,
+},
+modalTitle: {
+  fontSize: 20,
+  fontWeight: 'bold',
+  marginBottom: 5,
+},
+modalSub: {
+  color: '#666',
+  marginBottom: 20,
+},
+modalTimelineRow: {
+  flexDirection: 'row',
+  marginBottom: 25,
+  backgroundColor: '#f9f9f9',
+  padding: 15,
+  borderRadius: 12,
+},
+modalTimelineLeft: {
+  alignItems: 'center',
+  marginRight: 10,
+  paddingTop: 4,
+},
+modalOuterDot: {
+  width: 12,
+  height: 12,
+  borderRadius: 6,
+  borderWidth: 2,
+  borderColor: '#000',
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+modalInnerDot: {
+  width: 4,
+  height: 4,
+  borderRadius: 2,
+  backgroundColor: '#000',
+},
+modalLine: {
+  width: 1.5,
+  flex: 1,
+  minHeight: 15,
+  backgroundColor: '#ccc',
+  marginVertical: 2,
+},
+modalLabel: {
+  fontSize: 11,
+  color: '#888',
+  fontWeight: 'bold',
+},
+modalLocation: {
+  fontSize: 14,
+  fontWeight: '600',
+  color: '#000',
+  marginTop: 2,
+},
+modalBtnRow: {
+  flexDirection: 'row',
+  gap: 12,
+},
+modalCancelBtn: {
+  flex: 1,
+  paddingVertical: 12,
+  borderRadius: 8,
+  backgroundColor: '#eee',
+  alignItems: 'center',
+},
+modalCancelText: {
+  fontWeight: 'bold',
+  color: '#333',
+},
+modalConfirmBtn: {
+  flex: 1,
+  paddingVertical: 12,
+  borderRadius: 8,
+  backgroundColor: '#22c55e',
+  alignItems: 'center',
+},
+modalConfirmText: {
+  fontWeight: 'bold',
+  color: '#fff',
 },
 });
