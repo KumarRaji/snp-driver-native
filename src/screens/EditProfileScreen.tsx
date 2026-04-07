@@ -38,6 +38,7 @@ const EditProfileScreen = () => {
     alternateMobile3: profile.alternateMobile3 || '',
     alternateMobile4: profile.alternateMobile4 || '',
     gpayNo: profile.gpayNo || profile.phonepeNo || '',
+    password: '',
   });
 
   const [images, setImages] = useState<any>({});
@@ -96,6 +97,11 @@ const EditProfileScreen = () => {
         ...(uploadedPan && { panPhoto: uploadedPan }),
         ...(uploadedAadhar && { aadharPhoto: uploadedAadhar }),
       };
+
+    // Do not send empty password if the user isn't trying to change it
+    if (!payload.password) {
+      delete (payload as any).password;
+    }
 
       // Submitting the updated details to the server
       const res = await fetch(`${BASE_URL}/auth/profile`, {
@@ -186,6 +192,19 @@ const EditProfileScreen = () => {
               </TouchableOpacity>
             );
           })}
+        </View>
+
+        {/* Change Password */}
+        <View style={[styles.inputGroup, { marginTop: 25 }]}>
+          <Text style={styles.label}>Change Password</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter new password (leave blank to keep current)"
+            placeholderTextColor="#999"
+            secureTextEntry
+            value={form.password}
+            onChangeText={(text) => handleChange('password', text)}
+          />
         </View>
       </ScrollView>
 

@@ -202,6 +202,16 @@ const ProfileScreen = () => {
           </View>
         </View>
 
+        {/* PAYMENT */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Payment & Contact</Text>
+
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>UPI ID</Text>
+            <Text style={styles.rowValue}>{profile?.gpayNo || profile?.phonepeNo || 'Not set'}</Text>
+          </View>
+        </View>
+
         {/* ALT PHONES */}
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Alternate Phones</Text>
@@ -222,12 +232,6 @@ const ProfileScreen = () => {
               </View>
             ));
           })()}
-        </View>
-
-        {/* PAYMENT */}
-        <View style={[styles.card, styles.rowCard]}>
-          <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>UPI</Text>
-          <Text style={styles.rowValue}>{profile?.gpayNo || profile?.phonepeNo || 'Not set'}</Text>
         </View>
 
         {/* DOCUMENT STATUS */}
