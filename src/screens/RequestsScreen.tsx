@@ -16,6 +16,18 @@ import {
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 
+const formatDateTime = (date: string) => {
+  if (!date) return 'N/A';
+
+  const d = new Date(date);
+
+  return `${d.toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  })}, ${d.toLocaleDateString('en-GB')}`;
+};
+
 const RequestsScreen = () => {
   const [tab, setTab] = useState<'NEW' | 'HISTORY'>('NEW');
   const [requests, setRequests] = useState<any[]>([]);
@@ -164,7 +176,7 @@ const RequestsScreen = () => {
 
               {/* Date + Time */}
               <Text style={styles.dateText}>
-                {req.booking?.startDateTime ? new Date(req.booking.startDateTime).toLocaleString() : `${req.booking?.startDate} • ${req.booking?.startTime}`}
+                {formatDateTime(req.booking?.startDateTime)}
               </Text>
 
               {/* Price */}
@@ -269,7 +281,7 @@ const RequestsScreen = () => {
               {/* Top Row */}
               <View style={styles.historyTop}>
                 <Text style={styles.date}>
-                  {req.booking?.startTime} • {req.booking?.startDate}
+                  {formatDateTime(req.booking?.startDateTime)}
                 </Text>
 
                 <View style={[
