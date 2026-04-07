@@ -151,7 +151,7 @@ const RegisterScreen = () => {
     return (
         <KeyboardAvoidingView
             style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
             <ImageBackground
                 source={{
@@ -166,7 +166,7 @@ const RegisterScreen = () => {
                     <View style={styles.card}>
                         <ScrollView
                             showsVerticalScrollIndicator={false}
-                            contentContainerStyle={{ paddingBottom: 30 }}
+                            contentContainerStyle={{ paddingBottom: 100 }}
                             keyboardShouldPersistTaps="handled"
                             keyboardDismissMode="on-drag"
                         >

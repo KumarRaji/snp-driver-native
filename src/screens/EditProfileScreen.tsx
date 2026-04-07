@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -141,6 +143,10 @@ const EditProfileScreen = () => {
         <Text style={styles.headerTitle}>Edit Profile Details</Text>
       </View>
 
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         {[
           { key: 'name', label: 'Full Name' },
@@ -220,6 +226,7 @@ const EditProfileScreen = () => {
           </TouchableOpacity>
         </View>
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -234,7 +241,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { color: '#000', fontSize: 18, fontWeight: 'bold', marginLeft: 15 },
   backBtn: { paddingRight: 5 },
-  container: { padding: 20, paddingBottom: 40 },
+  container: { padding: 20, paddingBottom: 100 },
   inputGroup: { marginBottom: 15 },
   label: {
     fontSize: 12,

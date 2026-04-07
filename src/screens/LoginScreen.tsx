@@ -8,6 +8,8 @@ import {
     ActivityIndicator,
     ImageBackground,
     Alert,
+    KeyboardAvoidingView,
+    Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
@@ -87,6 +89,10 @@ const LoginScreen = () => {
             resizeMode="cover"
             blurRadius={3}
         >
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            >
             <View style={styles.overlay}>
                 <Text style={styles.logo}>SNP</Text>
 
@@ -142,6 +148,7 @@ const LoginScreen = () => {
                     </View>
                 </View>
             </View>
+            </KeyboardAvoidingView>
         </ImageBackground>
     );
 };
