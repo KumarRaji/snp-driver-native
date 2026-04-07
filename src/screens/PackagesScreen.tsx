@@ -34,7 +34,7 @@ const PackagesScreen = () => {
       const data = await getActiveSubscription();
       setActivePlan(data);
     } catch (e) {
-      console.log(e);
+      console.error('Fetch Active Plan Error:', e);
     }
   };
 
@@ -62,12 +62,9 @@ const PackagesScreen = () => {
         return;
       }
 
-      console.log('Payment success:', res);
-
       // Refresh active plan (with 1-second delay for backend to sync)
       await new Promise(resolve => setTimeout(resolve, 1000));
       const updated = await getActiveSubscription();
-      console.log('UPDATED PLAN:', updated);
       setActivePlan(updated);
 
       closeModal();
@@ -94,11 +91,6 @@ const PackagesScreen = () => {
 
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   };
-
-  console.log('ACTIVE PLAN FULL:', activePlan);
-  console.log('PLAN ID:', activePlan?.plan?.id || activePlan?.planId || activePlan?.subscriptionPlanId);
-  console.log('STATUS:', activePlan?.status);
-  console.log('END DATE:', activePlan?.endDate);
 
   return (
     <View style={{ flex: 1 }}>

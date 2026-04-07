@@ -24,7 +24,7 @@ const AppHeader = () => {
       const token = await AsyncStorage.getItem('auth-token');
 
       if (!token) {
-        console.log('❌ No token found');
+        console.warn('❌ No token found');
         return;
       }
 
@@ -41,15 +41,13 @@ const AppHeader = () => {
       if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
         const data = await res.json();
         
-        console.log('PROFILE DATA:', data); // ✅ DEBUG
-        
         const fullName = data?.user?.name || data?.name || '';
         setName(fullName);
       } else {
-        console.log('AppHeader Profile API returned an error or non-JSON response.');
+        console.error('AppHeader Profile API returned an error or non-JSON response.');
       }
     } catch (e) {
-      console.log('Profile error:', e);
+      console.error('Profile error:', e);
     }
   };
 

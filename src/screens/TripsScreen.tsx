@@ -43,7 +43,7 @@ const TripsScreen = () => {
   
       setTrips(sortedTrips);
     } catch (error) {
-      console.log('Error fetching trips:', error);
+      console.error('Error fetching trips:', error);
       setTrips([]);
     }
   };

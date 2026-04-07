@@ -28,7 +28,7 @@ const HomeScreen = () => {
       const data = await getTrips();
       setTrips(data?.bookings || data?.trips || []);
     } catch (error) {
-      console.log('Error fetching trips:', error);
+      console.error('Error fetching trips:', error);
     }
   };
 
@@ -40,7 +40,6 @@ const HomeScreen = () => {
   );
 
   const completeTrip = async (id: string) => {
-    console.log('Trip ID:', id);
     try {
       setLoadingId(id);
       const token = await AsyncStorage.getItem('auth-token');
@@ -62,7 +61,7 @@ const HomeScreen = () => {
         Alert.alert('Error', data.error || data.message || 'Failed to complete trip');
       }
     } catch (e) {
-      console.log(e);
+      console.error('Complete Trip Error:', e);
       Alert.alert('Error', 'Network error occurred');
     } finally {
       setLoadingId(null);

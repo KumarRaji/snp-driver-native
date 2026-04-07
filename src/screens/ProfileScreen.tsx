@@ -45,7 +45,7 @@ const ProfileScreen = () => {
       if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
         data = await res.json();
       } else {
-        console.log('Profile API returned an error or non-JSON response.');
+        console.error('Profile API returned an error or non-JSON response.');
       }
 
       const subRes = await fetch(`${BASE_URL}/subscriptions/driver`, {
@@ -55,13 +55,13 @@ const ProfileScreen = () => {
       if (subRes.ok && subRes.headers.get('content-type')?.includes('application/json')) {
         subData = await subRes.json();
       } else {
-        console.log('Subscription API returned an error or non-JSON response.');
+        console.error('Subscription API returned an error or non-JSON response.');
       }
 
       setProfile(data?.user || data);
       setSubscription(subData);
     } catch (err) {
-      console.log(err);
+      console.error('Fetch Profile Error:', err);
     } finally {
       setLoading(false);
     }

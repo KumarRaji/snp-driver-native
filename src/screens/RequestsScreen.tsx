@@ -60,7 +60,7 @@ const RequestsScreen = () => {
       setHasPackage(hasActivePackage);
       setActiveSub(sub);
     } catch (e) {
-      console.log(e);
+      console.error('Fetch requests error:', e);
     } finally {
       setLoadingSub(false);
     }
@@ -76,7 +76,7 @@ const RequestsScreen = () => {
         prev.map((r) => (r.id === id ? { ...r, status: action } : r))
       );
     } catch (e) {
-      console.log(e);
+      console.error('Perform action error:', e);
     } finally {
       setLoadingId(null);
     }

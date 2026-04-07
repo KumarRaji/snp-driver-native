@@ -123,8 +123,6 @@ const RegisterScreen = () => {
 
             const data = await response.json();
 
-            console.log('REGISTER RESPONSE:', data);
-
             if (response.ok) {
                 if (data.token) {
                     await AsyncStorage.setItem('auth-token', data.token);
@@ -140,7 +138,7 @@ const RegisterScreen = () => {
                 );
             }
         } catch (error) {
-            console.log(error);
+            console.error('Registration Error:', error);
             Alert.alert('Error', 'Network error');
         } finally {
             setLoading(false);

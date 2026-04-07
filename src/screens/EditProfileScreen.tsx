@@ -126,7 +126,7 @@ const EditProfileScreen = () => {
         Alert.alert('Error', data.message || data.error || 'Failed to update profile');
       }
     } catch (error) {
-      console.log(error);
+      console.error('Error saving profile:', error);
       Alert.alert('Error', 'Network error occurred while saving.');
     } finally {
       setLoading(false);

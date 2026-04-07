@@ -50,8 +50,6 @@ const LoginScreen = () => {
 
             const data = await response.json();
 
-            console.log("API RESPONSE:", data); // 🔍 DEBUG
-
             if (response.ok) {
                 // Save token
                 if (data.token) {
