@@ -128,7 +128,7 @@ const RegisterScreen = () => {
                 data = JSON.parse(text);
             } catch {
                 console.error('Register API Non-JSON response:', text);
-                throw new Error('Server returned an invalid format. Please try again.');
+                throw new Error('Server not responding. Please try again later.');
             }
 
             if (response.ok) {

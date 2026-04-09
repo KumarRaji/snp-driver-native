@@ -42,11 +42,12 @@ export const apiCall = async (url: string, options: any = {}) => {
       return data;
     } catch {
       // HTML response (server error, account blocked, or gateway issue)
-      return { logout: true, message: 'Invalid server response. Please try again.' };
+          // Do not force logout on temporary server errors (500/502/503) caused by fast tab switching
+          return { error: true, message: 'Server not responding. Please try again later.' };
     }
   } catch (error) {
     console.error('API Network Error:', error);
-    return { error: true, message: 'Network error' };
+        return { error: true, message: 'Server not responding. Please check your connection.' };
   }
 };
 

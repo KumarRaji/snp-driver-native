@@ -55,7 +55,7 @@ const LoginScreen = () => {
                 data = JSON.parse(text);
             } catch {
                 console.error('Login API Non-JSON response:', text);
-                throw new Error('Server returned an invalid format. Please try again.');
+                throw new Error('Server not responding. Please try again later.');
             }
 
             if (response.ok) {
@@ -71,9 +71,16 @@ const LoginScreen = () => {
                 // Navigate
                 navigation.replace('DriverTabs');
             } else {
+                let errorMessage = data.message || data.error || 'Invalid credentials';
+
+                // Hide internal database/server errors from the user
+                if (errorMessage.toLowerCase().includes('prisma') || response.status >= 500) {
+                    errorMessage = 'An unexpected server error occurred. Please try again later.';
+                }
+
                 Alert.alert(
                     'Login Failed',
-                    data.message || data.error || 'Invalid credentials'
+                    errorMessage
                 );
             }
         } catch (error: any) {
