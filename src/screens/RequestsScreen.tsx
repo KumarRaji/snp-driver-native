@@ -7,6 +7,7 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import {
   getRequests,
@@ -27,6 +28,11 @@ const formatDateTime = (date: string) => {
     minute: '2-digit',
     hour12: true,
   })}, ${d.toLocaleDateString('en-GB')}`;
+};
+
+const handleCall = (phone: string) => {
+  if (!phone) return;
+  Linking.openURL(`tel:${phone}`);
 };
 
 const RequestsScreen = () => {
@@ -74,7 +80,7 @@ const RequestsScreen = () => {
       setLoadingId(id);
       const res = await respondRequest(id, action);
       if (await handleLogoutIfRequired(res, navigation)) return;
-      
+
       // 🔥 REMOVE instantly from NEW list
       setRequests((prev) =>
         prev.map((r) => (r.id === id ? { ...r, status: action } : r))
@@ -139,217 +145,226 @@ const RequestsScreen = () => {
           </View>
         ) : (
           <>
-          {/* ❌ NO PACKAGE */}
-          {!hasPackage && (
-          <View style={styles.warningCard}>
-            <Text style={styles.warningIcon}>⚠</Text>
+            {/* ❌ NO PACKAGE */}
+            {!hasPackage && (
+              <View style={styles.warningCard}>
+                <Text style={styles.warningIcon}>⚠</Text>
 
-            <Text style={styles.warningTitle}>Package Required</Text>
+                <Text style={styles.warningTitle}>Package Required</Text>
 
-            <Text style={styles.warningText}>
-              Please choose a driver package from the PACKAGES tab to start receiving booking requests.
-            </Text>
-
-            <TouchableOpacity 
-              style={styles.packageBtn}
-              onPress={() => navigation.navigate('PACKAGES')}
-            >
-              <Text style={styles.packageBtnText}>Go to Packages</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* ✅ ACTIVE PACKAGE */}
-        {hasPackage && (
-          <View style={styles.activeCard}>
-            <View style={styles.activeRow}>
-              <Text style={styles.activeIcon}>✔</Text>
-              <View>
-                <Text style={styles.activeTitle}>Active Package</Text>
-                <Text style={styles.activeName}>
-                  {activeSub?.plan?.name || 'Package Active'}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.greenDot} />
-          </View>
-        )}
-
-        {/* EMPTY */}
-        {hasPackage && (tab === 'NEW' ? newRequests : historyRequests).length === 0 && (
-          <View style={styles.emptyBox}>
-            <Text style={styles.emptyIcon}>📥</Text>
-            <Text style={styles.emptyTitle}>
-              {tab === 'NEW' ? 'No pending requests' : 'No history found'}
-            </Text>
-          </View>
-        )}
-
-        {/* NEW LIST */}
-        {hasPackage && tab === 'NEW' &&
-          newRequests.map((req) => (
-            <View key={req.id} style={styles.webCard}>
-
-              {/* Date + Time */}
-              <Text style={styles.dateText}>
-                {formatDateTime(req.booking?.startDateTime)}
-              </Text>
-
-              {/* Price */}
-              <Text style={styles.webPrice}>
-                ₹{req.booking?.estimateAmount}
-              </Text>
-
-              {/* Payment */}
-              <Text style={styles.payment}>
-                Payment: {req.booking?.paymentMethod || 'CASH'}
-              </Text>
-
-              {/* Service Type */}
-              <Text style={styles.serviceBadge}>
-                {req.booking?.serviceType || 'LOCAL_HOURLY'}
-              </Text>
-
-              {/* Timeline & Locations */}
-              <View style={styles.timelineRow}>
-
-                {/* LEFT DOT LINE */}
-                <View style={styles.timelineLeft}>
-                  {/* Pickup Icon */}
-                  <View style={styles.outerDot}>
-                    <View style={styles.innerDot} />
-                  </View>
-
-                  {/* Line */}
-                  <View style={styles.line} />
-                  
-                  {/* Drop Icon */}
-                  <Feather name="map-pin" size={14} color="#000" />
-                </View>
-
-                {/* RIGHT CONTENT */}
-                <View style={styles.timelineRight}>
-                  <Text style={styles.label}>Pickup</Text>
-                  <Text style={styles.locationDark}>
-                    {req.booking?.pickupLocation}
-                  </Text>
-
-                  <Text style={[styles.label, { marginTop: 10 }]}>Drop-off</Text>
-                  <Text style={styles.locationDark}>
-                    {req.booking?.dropLocation}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Customer */}
-              <View style={styles.customerBox}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>
-                    {req.booking?.customer?.name?.charAt(0)?.toUpperCase() || 'C'}
-                  </Text>
-                </View>
-
-                <View>
-                  <Text style={styles.customerName}>
-                    {req.booking?.customer?.name || 'Customer'}
-                  </Text>
-                  <Text style={styles.customerPhone}>
-                    {req.booking?.customer?.phone || ''}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Buttons */}
-              <View style={styles.btnRow}>
-                <TouchableOpacity
-                  style={styles.declineBtn}
-                  onPress={() => handleAction(req.id, 'REJECTED')}
-                  disabled={loadingId === req.id}
-                >
-                  {loadingId === req.id ? (
-                    <ActivityIndicator />
-                  ) : (
-                    <Text>Decline</Text>
-                  )}
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.acceptBtn}
-                  onPress={() => handleAction(req.id, 'ACCEPTED')}
-                  disabled={loadingId === req.id}
-                >
-                  {loadingId === req.id ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={{ color: '#fff' }}>Accept</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-
-            </View>
-          ))}
-
-        {/* HISTORY LIST */}
-        {hasPackage && tab === 'HISTORY' &&
-          historyRequests.map((req) => (
-            <View key={req.id} style={styles.historyCard}>
-
-              {/* Top Row */}
-              <View style={styles.historyTop}>
-                <Text style={styles.date}>
-                  {formatDateTime(req.booking?.startDateTime)}
+                <Text style={styles.warningText}>
+                  Please choose a driver package from the PACKAGES tab to start receiving booking requests.
                 </Text>
 
-                <View style={[
-                  styles.statusBadge,
-                  req.status === 'ACCEPTED' ? styles.accepted : styles.rejected
-                ]}>
-                  <Text style={[styles.statusText, req.status === 'ACCEPTED' ? { color: '#15803d' } : { color: '#b91c1c' }]}>{req.status}</Text>
-                </View>
+                <TouchableOpacity
+                  style={styles.packageBtn}
+                  onPress={() => navigation.navigate('PACKAGES')}
+                >
+                  <Text style={styles.packageBtnText}>Go to Packages</Text>
+                </TouchableOpacity>
               </View>
+            )}
 
-              {/* Price */}
-              <Text style={styles.priceBlack}>
-                ₹{req.booking?.estimateAmount}
-              </Text>
+            {/* ✅ ACTIVE PACKAGE */}
+            {hasPackage && (
+              <View style={styles.activeCard}>
+                <View style={styles.activeRow}>
+                  <Text style={styles.activeIcon}>✔</Text>
+                  <View>
+                    <Text style={styles.activeTitle}>Active Package</Text>
+                    <Text style={styles.activeName}>
+                      {activeSub?.plan?.name || 'Package Active'}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.greenDot} />
+              </View>
+            )}
 
-              {/* Type */}
-              <Text style={styles.type}>
-                {req.booking?.serviceType || 'LOCAL_HOURLY'}
-              </Text>
+            {/* EMPTY */}
+            {hasPackage && (tab === 'NEW' ? newRequests : historyRequests).length === 0 && (
+              <View style={styles.emptyBox}>
+                <Text style={styles.emptyIcon}>📥</Text>
+                <Text style={styles.emptyTitle}>
+                  {tab === 'NEW' ? 'No pending requests' : 'No history found'}
+                </Text>
+              </View>
+            )}
 
-              {/* Timeline & Locations */}
-              <View style={styles.timelineRow}>
-                {/* LEFT DOT LINE */}
-                <View style={styles.timelineLeft}>
-                  {/* Pickup Icon */}
-                  <View style={styles.outerDot}>
-                    <View style={styles.innerDot} />
+            {/* NEW LIST */}
+            {hasPackage && tab === 'NEW' &&
+              newRequests.map((req) => (
+                <View key={req.id} style={styles.webCard}>
+
+                  {/* Date + Time */}
+                  <Text style={styles.dateText}>
+                    {formatDateTime(req.booking?.startDateTime)}
+                  </Text>
+
+                  {/* Price */}
+                  <Text style={styles.webPrice}>
+                    ₹{req.booking?.estimateAmount}
+                  </Text>
+
+                  {/* Payment */}
+                  <Text style={styles.payment}>
+                    Payment: {req.booking?.paymentMethod || 'CASH'}
+                  </Text>
+
+                  {/* Service Type */}
+                  <Text style={styles.serviceBadge}>
+                    {req.booking?.serviceType || 'LOCAL_HOURLY'}
+                  </Text>
+
+                  {/* Timeline & Locations */}
+                  <View style={styles.timelineRow}>
+
+                    {/* LEFT DOT LINE */}
+                    <View style={styles.timelineLeft}>
+                      {/* Pickup Icon */}
+                      <View style={styles.outerDot}>
+                        <View style={styles.innerDot} />
+                      </View>
+
+                      {/* Line */}
+                      <View style={styles.line} />
+
+                      {/* Drop Icon */}
+                      <Feather name="map-pin" size={14} color="#000" />
+                    </View>
+
+                    {/* RIGHT CONTENT */}
+                    <View style={styles.timelineRight}>
+                      <Text style={styles.label}>Pickup</Text>
+                      <Text style={styles.locationDark}>
+                        {req.booking?.pickupLocation}
+                      </Text>
+
+                      <Text style={[styles.label, { marginTop: 10 }]}>Drop-off</Text>
+                      <Text style={styles.locationDark}>
+                        {req.booking?.dropLocation}
+                      </Text>
+                    </View>
                   </View>
 
-                  {/* Line */}
-                  <View style={styles.line} />
-                  
-                  {/* Drop Icon */}
-                  <Feather name="map-pin" size={14} color="#000" />
-                </View>
+                  {/* Customer */}
+                  <View style={styles.userRow}>
+                    {/* Left side (Avatar + Info) */}
+                    <View style={styles.userInfo}>
+                      <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>
+                          {req.booking?.customer?.name?.charAt(0)?.toUpperCase() || 'C'}
+                        </Text>
+                      </View>
 
-                {/* RIGHT CONTENT */}
-                <View style={styles.timelineRight}>
-                  <Text style={styles.label}>Pickup</Text>
-                  <Text style={styles.locationDark}>
-                    {req.booking?.pickupLocation}
+                      <View>
+                        <Text style={styles.name}>{req.booking?.customer?.name || 'Customer'}</Text>
+                        <Text style={styles.phone}>{req.booking?.customer?.phone || ''}</Text>
+                      </View>
+                    </View>
+
+                    {/* 🔥 Right side Phone Icon */}
+                    {req.booking?.customer?.phone ? (
+                      <TouchableOpacity
+                        style={styles.callButton}
+                        onPress={() => handleCall(req.booking?.customer?.phone)}
+                      >
+                        <Feather name="phone" size={18} color="#fff" />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+
+                  {/* Buttons */}
+                  <View style={styles.btnRow}>
+                    <TouchableOpacity
+                      style={styles.declineBtn}
+                      onPress={() => handleAction(req.id, 'REJECTED')}
+                      disabled={loadingId === req.id}
+                    >
+                      {loadingId === req.id ? (
+                        <ActivityIndicator />
+                      ) : (
+                        <Text>Decline</Text>
+                      )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.acceptBtn}
+                      onPress={() => handleAction(req.id, 'ACCEPTED')}
+                      disabled={loadingId === req.id}
+                    >
+                      {loadingId === req.id ? (
+                        <ActivityIndicator color="#fff" />
+                      ) : (
+                        <Text style={{ color: '#fff' }}>Accept</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+
+                </View>
+              ))}
+
+            {/* HISTORY LIST */}
+            {hasPackage && tab === 'HISTORY' &&
+              historyRequests.map((req) => (
+                <View key={req.id} style={styles.historyCard}>
+
+                  {/* Top Row */}
+                  <View style={styles.historyTop}>
+                    <Text style={styles.date}>
+                      {formatDateTime(req.booking?.startDateTime)}
+                    </Text>
+
+                    <View style={[
+                      styles.statusBadge,
+                      req.status === 'ACCEPTED' ? styles.accepted : styles.rejected
+                    ]}>
+                      <Text style={[styles.statusText, req.status === 'ACCEPTED' ? { color: '#15803d' } : { color: '#b91c1c' }]}>{req.status}</Text>
+                    </View>
+                  </View>
+
+                  {/* Price */}
+                  <Text style={styles.priceBlack}>
+                    ₹{req.booking?.estimateAmount}
                   </Text>
 
-                  <Text style={[styles.label, { marginTop: 10 }]}>Drop-off</Text>
-                  <Text style={styles.locationDark}>
-                    {req.booking?.dropLocation}
+                  {/* Type */}
+                  <Text style={styles.type}>
+                    {req.booking?.serviceType || 'LOCAL_HOURLY'}
                   </Text>
-                </View>
-              </View>
 
-            </View>
-          ))}
+                  {/* Timeline & Locations */}
+                  <View style={styles.timelineRow}>
+                    {/* LEFT DOT LINE */}
+                    <View style={styles.timelineLeft}>
+                      {/* Pickup Icon */}
+                      <View style={styles.outerDot}>
+                        <View style={styles.innerDot} />
+                      </View>
+
+                      {/* Line */}
+                      <View style={styles.line} />
+
+                      {/* Drop Icon */}
+                      <Feather name="map-pin" size={14} color="#000" />
+                    </View>
+
+                    {/* RIGHT CONTENT */}
+                    <View style={styles.timelineRight}>
+                      <Text style={styles.label}>Pickup</Text>
+                      <Text style={styles.locationDark}>
+                        {req.booking?.pickupLocation}
+                      </Text>
+
+                      <Text style={[styles.label, { marginTop: 10 }]}>Drop-off</Text>
+                      <Text style={styles.locationDark}>
+                        {req.booking?.dropLocation}
+                      </Text>
+                    </View>
+                  </View>
+
+                </View>
+              ))}
           </>
         )}
       </ScrollView>
@@ -536,11 +551,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   line: {
-    width: 1.5,
-    height: 30,
-    backgroundColor: '#ccc',
-    marginVertical: 4,
+    width: 2,
+    flex: 1,
+    backgroundColor: '#666',
+    marginVertical: 6,
+    borderRadius: 2,
   },
+
   label: {
     fontSize: 12,
     color: '#777',
@@ -560,32 +577,50 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: '#000',
   },
-  customerBox: {
+  userRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    padding: 10,
+    justifyContent: 'space-between',
+    backgroundColor: '#f3f3f3',
+    padding: 12,
     borderRadius: 10,
-    marginTop: 12,
-    gap: 10,
+    marginTop: 10,
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   avatar: {
-    width: 35,
-    height: 35,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#ddd',
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
   },
   avatarText: {
     fontWeight: 'bold',
   },
-  customerName: {
+  name: {
     fontWeight: 'bold',
+    fontSize: 14,
   },
-  customerPhone: {
-    fontSize: 12,
+  phone: {
     color: '#777',
+    fontSize: 13,
+  },
+  callButton: {
+    width: 45,
+    height: 45,
+    borderRadius: 25,
+    backgroundColor: '#22c55e',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   btnRow: {
     flexDirection: 'row',

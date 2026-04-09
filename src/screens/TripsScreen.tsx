@@ -24,26 +24,26 @@ const TripsScreen = () => {
       const data = await getTrips();
 
       if (await handleLogoutIfRequired(data, navigation)) return;
-  
+
       const sortedTrips = (data?.trips || []).sort((a: any, b: any) => {
         const getPriority = (status: string) => {
           if (status === 'CONFIRMED') return 1;
           if (status === 'COMPLETED') return 3;
           return 2; // Other statuses in the middle
         };
-        
+
         const priorityDiff = getPriority(a.status) - getPriority(b.status);
         if (priorityDiff !== 0) {
           return priorityDiff;
         }
-  
+
         // If same status, sort by date & time (newest top, oldest bottom)
         const timeA = new Date(`${a.startDate || '1970-01-01'}T${a.startTime || '00:00'}:00`).getTime();
         const timeB = new Date(`${b.startDate || '1970-01-01'}T${b.startTime || '00:00'}:00`).getTime();
-        
+
         return timeB - timeA;
       });
-  
+
       setTrips(sortedTrips);
     } catch (error) {
       console.error('Error fetching trips:', error);
@@ -74,7 +74,7 @@ const TripsScreen = () => {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      
+
       {/* 🔥 Upcoming Section */}
       <View style={styles.titleRow}>
         <View style={styles.greenDot} />
@@ -348,9 +348,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   line: {
-    width: 1.5,
-    height: 30,
-    backgroundColor: '#ccc',
-    marginVertical: 4,
+    width: 2,
+    flex: 1,
+    backgroundColor: '#666',
+    marginVertical: 6,
+    borderRadius: 2,
   },
+
 });
