@@ -11,18 +11,30 @@ const AppHeader = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
-  const [name, setName] = useState('');
+  const [name, setName] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
+      loadLocalProfile();
       fetchProfile();
     }, [])
   );
 
   const handleLogout = async () => {
     await AsyncStorage.removeItem('auth-token');
+    await AsyncStorage.removeItem('profile');
     navigation.replace('Login');
+  };
+
+  const loadLocalProfile = async () => {
+    const stored = await AsyncStorage.getItem('profile');
+    if (stored) {
+      const user = JSON.parse(stored);
+      setName(user?.name || '');
+      setLoading(false);
+    }
   };
 
   const fetchProfile = async () => {
@@ -32,13 +44,20 @@ const AppHeader = () => {
 
       const fullName = data?.user?.name || data?.name || '';
       setName(fullName);
+      setLoading(false);
+
+      await AsyncStorage.setItem(
+        'profile',
+        JSON.stringify({ name: fullName })
+      );
     } catch (e) {
       console.error('Profile error:', e);
+      setLoading(false);
     }
   };
 
-  const getInitial = (fullName: string) => {
-    if (!fullName) return 'D';
+  const getInitial = (fullName?: string | null) => {
+    if (!fullName) return '';
     return fullName.trim().charAt(0).toUpperCase();
   };
 
@@ -49,9 +68,13 @@ const AppHeader = () => {
       <View style={styles.right}>
         {/* Profile Circle */}
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {getInitial(name)}
-          </Text>
+          {loading ? (
+            <Feather name="loader" size={16} color="#000" />
+          ) : (
+            <Text style={styles.avatarText}>
+              {getInitial(name)}
+            </Text>
+          )}
         </View>
 
         {/* Settings Icon */}
