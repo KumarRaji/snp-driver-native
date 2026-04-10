@@ -1,6 +1,6 @@
 // src/components/AppHeader.tsx
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
@@ -12,6 +12,7 @@ const AppHeader = () => {
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
   const [name, setName] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
 
@@ -33,6 +34,7 @@ const AppHeader = () => {
     if (stored) {
       const user = JSON.parse(stored);
       setName(user?.name || '');
+      setProfileImage(user?.image || null);
       setLoading(false);
     }
   };
@@ -42,13 +44,17 @@ const AppHeader = () => {
       const data = await getProfile();
       if (await handleLogoutIfRequired(data, navigation)) return;
 
-      const fullName = data?.user?.name || data?.name || '';
+      const user = data?.user || data;
+      const fullName = user?.name || '';
+      const image = user?.photo || null;
+
       setName(fullName);
+      setProfileImage(image);
       setLoading(false);
 
       await AsyncStorage.setItem(
         'profile',
-        JSON.stringify({ name: fullName })
+        JSON.stringify({ name: fullName, image })
       );
     } catch (e) {
       console.error('Profile error:', e);
@@ -66,15 +72,30 @@ const AppHeader = () => {
       <Text style={styles.logo}>SNP</Text>
 
       <View style={styles.right}>
-        {/* Profile Circle */}
-        <View style={styles.avatar}>
-          {loading ? (
-            <Feather name="loader" size={16} color="#000" />
-          ) : (
-            <Text style={styles.avatarText}>
-              {getInitial(name)}
+        {/* Name + Avatar */}
+        <View style={styles.profileRow}>
+          {/* Full Name */}
+          {!loading && name && (
+            <Text style={styles.userName} numberOfLines={1}>
+              {name}
             </Text>
           )}
+
+          {/* Profile Circle */}
+          <View style={styles.avatar}>
+            {loading ? (
+              <Feather name="loader" size={16} color="#000" />
+            ) : profileImage ? (
+              <Image
+                source={{ uri: profileImage }}
+                style={styles.avatarImage}
+              />
+            ) : (
+              <Text style={styles.avatarText}>
+                {getInitial(name)}
+              </Text>
+            )}
+          </View>
         </View>
 
         {/* Settings Icon */}
@@ -153,6 +174,19 @@ const styles = StyleSheet.create({
     gap: 10,
   },
 
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+
+  userName: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+    maxWidth: 100, // prevents overflow
+  },
+
   avatar: {
     width: 32,
     height: 32,
@@ -160,10 +194,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#ddd',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden', // 🔥 important
   },
 
   avatarText: {
     fontWeight: 'bold',
+  },
+
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 16,
   },
 
   icon: {
