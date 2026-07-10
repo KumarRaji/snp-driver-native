@@ -14,7 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import AppHeader from '../components/AppHeader';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { getProfile, getActiveSubscription, handleLogoutIfRequired } from '../api/driverApi';
+import { getProfile, getActiveSubscription, handleLogoutIfRequired, getTrips } from '../api/driverApi';
 
 const BASE_URL = 'https://drivemate.api.luisant.cloud/api';
 
@@ -22,6 +22,7 @@ const ProfileScreen = () => {
   const navigation = useNavigation<any>();
   const [profile, setProfile] = useState<any>(null);
   const [subscription, setSubscription] = useState<any>(null);
+  const [trips, setTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,8 +37,12 @@ const ProfileScreen = () => {
       const subData = await getActiveSubscription();
       if (await handleLogoutIfRequired(subData, navigation)) return;
 
+      const tripsData = await getTrips();
+      if (await handleLogoutIfRequired(tripsData, navigation)) return;
+
       setProfile(data?.user || data);
       setSubscription(subData);
+      setTrips(tripsData?.trips || tripsData?.bookings || []);
     } catch (err) {
       console.error('Fetch Profile Error:', err);
     } finally {
@@ -114,8 +119,7 @@ const ProfileScreen = () => {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.label}>Total Trips</Text>
-                <Text style={[styles.value, { fontSize: 20 }]}>{profile?.totalRides || 0}</Text>
-                <Text style={styles.subText}>completed</Text>
+                <Text style={[styles.value, { fontSize: 20 }]}>{trips.length}</Text>
               </View>
             </View>
           </View>
@@ -474,6 +478,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 10,
     marginTop: 10,
+    height: 120,
   },
   expiryText: {
     fontSize: 10,
