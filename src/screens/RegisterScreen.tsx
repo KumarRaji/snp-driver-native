@@ -96,7 +96,7 @@ const RegisterScreen = () => {
                 showModal('Permission Required', 'Camera permission is needed to take photos.');
                 return;
             }
-            const result = await ImagePicker.launchCameraAsync({ mediaTypes: 'Images', quality: 0.7 });
+            const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 });
             if (!result.canceled) setImages((prev: any) => ({ ...prev, [field]: result.assets[0] }));
         } else {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -104,7 +104,7 @@ const RegisterScreen = () => {
                 showModal('Permission Required', 'Gallery permission is needed to select photos.');
                 return;
             }
-            const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'Images', quality: 0.7 });
+            const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 });
             if (!result.canceled) setImages((prev: any) => ({ ...prev, [field]: result.assets[0] }));
         }
     };
