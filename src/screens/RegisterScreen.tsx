@@ -51,10 +51,11 @@ const RegisterScreen = () => {
     const [uploadedUrls, setUploadedUrls] = useState<any>({});
     const [showLicensePicker, setShowLicensePicker] = useState(false);
     const [showPolicePicker, setShowPolicePicker] = useState(false);
-    const [modal, setModal] = useState({ visible: false, title: '', message: '' });
+    const [modal, setModal] = useState({ visible: false, title: '', message: '', type: 'error' as 'success' | 'error' });
 
-    const showModal = (title: string, message: string) => setModal({ visible: true, title, message });
-    const hideModal = () => setModal({ visible: false, title: '', message: '' });
+    const showModal = (title: string, message: string, type: 'success' | 'error' = 'error') =>
+        setModal({ visible: true, title, message, type });
+    const hideModal = () => setModal({ visible: false, title: '', message: '', type: 'error' });
 
     const formatDate = (date: Date) => {
         const dd = String(date.getDate()).padStart(2, '0');
@@ -83,20 +84,28 @@ const RegisterScreen = () => {
         });
     };
 
-    const pickImage = async (field: string) => {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== 'granted') {
-            showModal('Permission Required', 'Camera permission is needed to take photos.');
-            return;
-        }
+    const [sourceModal, setSourceModal] = useState<string | null>(null);
 
-        const result = await ImagePicker.launchCameraAsync({
-            mediaTypes: 'Images',
-            quality: 0.7,
-        });
+    const pickImage = (field: string) => setSourceModal(field);
 
-        if (!result.canceled) {
-            setImages((prev: any) => ({ ...prev, [field]: result.assets[0] }));
+    const handleImageSource = async (field: string, source: 'camera' | 'gallery') => {
+        setSourceModal(null);
+        if (source === 'camera') {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+                showModal('Permission Required', 'Camera permission is needed to take photos.');
+                return;
+            }
+            const result = await ImagePicker.launchCameraAsync({ mediaTypes: 'Images', quality: 0.7 });
+            if (!result.canceled) setImages((prev: any) => ({ ...prev, [field]: result.assets[0] }));
+        } else {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                showModal('Permission Required', 'Gallery permission is needed to select photos.');
+                return;
+            }
+            const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'Images', quality: 0.7 });
+            if (!result.canceled) setImages((prev: any) => ({ ...prev, [field]: result.assets[0] }));
         }
     };
 
@@ -147,7 +156,7 @@ const RegisterScreen = () => {
             };
 
             setUploadedUrls(uploadedDocumentUrls);
-            showModal('Success', 'Documents uploaded. Please verify your OTP to finish registration.');
+            showModal('Success', 'Documents uploaded. Please verify your OTP to finish registration.', 'success');
             setStep(4);
         } catch (error) {
             console.error('Upload Error:', error);
@@ -219,8 +228,8 @@ const RegisterScreen = () => {
                     await AsyncStorage.setItem('auth-token', data.token);
                 }
 
-                Alert.alert('Success', 'Registration successful');
-                navigation.replace('Login');
+                showModal('Success', 'Registration successful', 'success');
+                setTimeout(() => navigation.replace('Login'), 1500);
             } else {
                 showModal('Error', data.message || data.error || 'Registration failed');
             }
@@ -436,7 +445,7 @@ const RegisterScreen = () => {
     const handlePrimaryAction = () => {
         if (step === 1) {
             if (!form.name || !form.phone || !form.password || !form.permanentAddress) {
-                Alert.alert('Error', 'Please fill the required personal details');
+                showModal('Error', 'Please fill the required personal details');
                 return;
             }
 
@@ -446,7 +455,7 @@ const RegisterScreen = () => {
 
         if (step === 2) {
             if (!form.aadharNo || !form.licenseNo || !form.licenseExpiryDate) {
-                Alert.alert('Error', 'Please fill the required identification fields');
+                showModal('Error', 'Please fill the required identification fields');
                 return;
             }
 
@@ -540,11 +549,43 @@ const RegisterScreen = () => {
                 </View>
             </ImageBackground>
 
+            <Modal visible={!!sourceModal} transparent animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.sourceModal}>
+                        <Text style={styles.sourceTitle}>Upload Photo</Text>
+                        <Text style={styles.sourceSubTitle}>Choose how to add your document photo</Text>
+                        <TouchableOpacity style={styles.sourceOption} onPress={() => handleImageSource(sourceModal!, 'camera')}>
+                            <Feather name="camera" size={22} color="#111" />
+                            <View style={styles.sourceOptionText}>
+                                <Text style={styles.sourceOptionLabel}>Take Photo</Text>
+                                <Text style={styles.sourceOptionHint}>Open camera to capture now</Text>
+                            </View>
+                            <Feather name="chevron-right" size={18} color="#aaa" />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.sourceOption} onPress={() => handleImageSource(sourceModal!, 'gallery')}>
+                            <Feather name="image" size={22} color="#111" />
+                            <View style={styles.sourceOptionText}>
+                                <Text style={styles.sourceOptionLabel}>Choose from Gallery</Text>
+                                <Text style={styles.sourceOptionHint}>Pick an existing photo</Text>
+                            </View>
+                            <Feather name="chevron-right" size={18} color="#aaa" />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.sourceCancelBtn} onPress={() => setSourceModal(null)}>
+                            <Text style={styles.sourceCancelText}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
             <Modal visible={modal.visible} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContainer}>
-                        <View style={styles.modalHeader}>
-                            <Feather name="alert-triangle" size={58} color="#fff" />
+                        <View style={[styles.modalHeader, { backgroundColor: modal.type === 'success' ? '#22C55E' : '#EF4444' }]}>
+                            <Feather
+                                name={modal.type === 'success' ? 'check-circle' : 'alert-triangle'}
+                                size={58}
+                                color="#fff"
+                            />
                         </View>
                         <View style={styles.modalBody}>
                             <Text style={styles.modalTitle}>{modal.title}</Text>
@@ -811,6 +852,56 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
         borderRadius: 10,
+    },
+    sourceModal: {
+        width: '90%',
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 20,
+    },
+    sourceTitle: {
+        fontSize: 17,
+        fontWeight: '700',
+        color: '#111',
+        marginBottom: 4,
+    },
+    sourceSubTitle: {
+        fontSize: 12,
+        color: '#888',
+        marginBottom: 18,
+    },
+    sourceOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14,
+        borderTopWidth: 1,
+        borderTopColor: '#f0f0f0',
+        gap: 14,
+    },
+    sourceOptionText: {
+        flex: 1,
+    },
+    sourceOptionLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#111',
+    },
+    sourceOptionHint: {
+        fontSize: 11,
+        color: '#999',
+        marginTop: 2,
+    },
+    sourceCancelBtn: {
+        marginTop: 14,
+        paddingVertical: 13,
+        borderRadius: 12,
+        backgroundColor: '#f3f4f6',
+        alignItems: 'center',
+    },
+    sourceCancelText: {
+        fontWeight: '700',
+        color: '#555',
+        fontSize: 14,
     },
     modalOverlay: {
         flex: 1,

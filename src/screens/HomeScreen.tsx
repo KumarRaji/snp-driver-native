@@ -5,20 +5,45 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   Modal,
+  TextInput,
+  Image,
+  Linking,
 } from 'react-native';
-import { getTrips, handleLogoutIfRequired, completeTripAPI } from '../api/driverApi';
+import { getTrips, handleLogoutIfRequired, completeTripAPI, sendStartOTP, startTripAPI, requestCancelAPI } from '../api/driverApi';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import TripTimer from '../components/TripTimer';
 
 const HomeScreen = () => {
   const [trips, setTrips] = useState<any[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedTrip, setSelectedTrip] = useState<any>(null);
   const navigation = useNavigation<any>();
+
+  // Complete modal
+  const [completeModal, setCompleteModal] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState<any>(null);
+
+  // Cancel modal
+  const [cancelModal, setCancelModal] = useState(false);
+
+  // Start trip flow
+  const [startModal, setStartModal] = useState(false);
+  const [frontPhoto, setFrontPhoto] = useState<any>(null);
+  const [backPhoto, setBackPhoto] = useState<any>(null);
+
+  // OTP modal
+  const [otpModal, setOtpModal] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+
+  // Info modal (replaces Alert)
+  const [infoModal, setInfoModal] = useState({ visible: false, title: '', message: '', success: false });
+  const showInfo = (title: string, message: string, success = false) =>
+    setInfoModal({ visible: true, title, message, success });
+  const hideInfo = () => setInfoModal({ visible: false, title: '', message: '', success: false });
 
   useFocusEffect(
     useCallback(() => {
@@ -37,38 +62,110 @@ const HomeScreen = () => {
   };
 
   const activeTrips = trips.filter(
-    (t) =>
-      t.status === 'ONGOING' ||
-      t.status === 'CONFIRMED' ||
-      t.status === 'ACCEPTED'
+    (t) => t.status === 'ONGOING' || t.status === 'CONFIRMED' || t.status === 'ACCEPTED'
   );
 
-  const completeTrip = async (id: string) => {
+  // ── Complete Trip ──────────────────────────────────────────
+  const completeTrip = async () => {
+    if (!selectedTrip) return;
     try {
-      setLoadingId(id);
-      const data = await completeTripAPI(id);
-
+      setLoadingId(selectedTrip.id);
+      const data = await completeTripAPI(selectedTrip.id);
       if (await handleLogoutIfRequired(data, navigation)) return;
-
       if (data?.success) {
-        Alert.alert('Success', 'Trip completed successfully!');
-        setModalVisible(false);
+        setCompleteModal(false);
         setSelectedTrip(null);
-        fetchTrips(); // Refresh the list to remove the completed trip
+        fetchTrips();
+        showInfo('Success', 'Trip completed successfully!', true);
       } else {
-        Alert.alert('Error', data?.error || data?.message || 'Failed to complete trip');
+        showInfo('Error', data?.error || data?.message || 'Failed to complete trip');
       }
     } catch (e) {
-      console.error('Complete Trip Error:', e);
-      Alert.alert('Error', 'Network error occurred');
+      showInfo('Error', 'Network error occurred');
     } finally {
       setLoadingId(null);
     }
   };
 
-  const handleCompletePress = (trip: any) => {
-    setSelectedTrip(trip);
-    setModalVisible(true);
+  // ── Cancel Trip ────────────────────────────────────────────
+  const requestCancel = async () => {
+    if (!selectedTrip) return;
+    try {
+      setLoadingId(selectedTrip.id);
+      const data = await requestCancelAPI(selectedTrip.id);
+      if (await handleLogoutIfRequired(data, navigation)) return;
+      setCancelModal(false);
+      setSelectedTrip(null);
+      fetchTrips();
+      showInfo('Submitted', 'Cancellation request submitted.', true);
+    } catch (e) {
+      showInfo('Error', 'Network error occurred');
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  // ── Start Trip Flow ────────────────────────────────────────
+  const takePhoto = async (type: 'front' | 'back') => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      showInfo('Permission Required', 'Camera permission is needed to take photos.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({ mediaTypes: 'Images', quality: 0.7 });
+    if (!result.canceled) {
+      if (type === 'front') setFrontPhoto(result.assets[0]);
+      else setBackPhoto(result.assets[0]);
+    }
+  };
+
+  const handleSendOTP = async () => {
+    if (!selectedTrip) return;
+    try {
+      setOtpLoading(true);
+      const data = await sendStartOTP(selectedTrip.id);
+      if (await handleLogoutIfRequired(data, navigation)) return;
+      if (data?.success) {
+        setStartModal(false);
+        setOtpModal(true);
+      } else {
+        showInfo('Error', data?.message || 'Failed to send OTP');
+      }
+    } catch (e) {
+      showInfo('Error', 'Network error occurred');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleConfirmStart = async () => {
+    if (!selectedTrip || otp.length !== 6) return;
+    try {
+      setOtpLoading(true);
+      const data = await startTripAPI(selectedTrip.id, otp);
+      if (await handleLogoutIfRequired(data, navigation)) return;
+      if (data?.success) {
+        setOtpModal(false);
+        setOtp('');
+        setFrontPhoto(null);
+        setBackPhoto(null);
+        setSelectedTrip(null);
+        fetchTrips();
+        showInfo('Trip Started', 'Trip has been started successfully!', true);
+      } else {
+        showInfo('Error', data?.message || 'Invalid OTP or failed to start trip');
+      }
+    } catch (e) {
+      showInfo('Error', 'Network error occurred');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const resetStartFlow = () => {
+    setStartModal(false);
+    setFrontPhoto(null);
+    setBackPhoto(null);
   };
 
   return (
@@ -84,124 +181,308 @@ const HomeScreen = () => {
 
         {activeTrips.length === 0 ? (
           <View style={styles.emptyBox}>
-
-            {/* Icon */}
             <Text style={styles.emptyIcon}>📋</Text>
-
-            {/* Title */}
             <Text style={styles.emptyTitle}>No active trips</Text>
-
-            {/* Subtitle */}
-            <Text style={styles.emptySub}>
-              Wait for admin to assign bookings
-            </Text>
-
+            <Text style={styles.emptySub}>Wait for admin to assign bookings</Text>
           </View>
         ) : (
-          activeTrips.map((trip) => (
-            <View key={trip.id} style={styles.card}>
+          activeTrips.map((trip) => {
+            const isConfirmed = trip.status === 'CONFIRMED' || trip.status === 'ACCEPTED';
+            return (
+              <View key={trip.id} style={styles.card}>
 
-              {/* Header Row */}
-              <View style={styles.topRow}>
-                <Text style={styles.onTrip}>
-                  {trip.status === 'CONFIRMED' ? 'On Trip' : trip.status || 'ONGOING'}
-                </Text>
-
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>
-                    {trip.serviceType || 'Outstation'}
-                  </Text>
+                {/* Header */}
+                <View style={styles.topRow}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={styles.onTrip}>
+                      {isConfirmed ? 'Confirmed' : 'On Trip'}
+                    </Text>
+                    {!isConfirmed && trip.actualStartTime && (
+                      <View style={{ marginLeft: 8 }}>
+                        <TripTimer startTime={trip.actualStartTime} />
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{trip.serviceType || 'Outstation'}</Text>
+                  </View>
                 </View>
-              </View>
 
-              {/* Divider */}
-              <View style={styles.divider} />
+                <View style={styles.divider} />
 
-              {/* Timeline & Locations */}
-              <View style={styles.timelineRow}>
-                <View style={styles.timelineLeft}>
-                  <View style={styles.outerDot}><View style={styles.innerDot} /></View>
-                  <View style={styles.line} />
-                  <Feather name="map-pin" size={14} color="#fff" />
+                {/* Timeline */}
+                <View style={styles.timelineRow}>
+                  <View style={styles.timelineLeft}>
+                    <View style={styles.outerDot}><View style={styles.innerDot} /></View>
+                    <View style={styles.line} />
+                    <Feather name="map-pin" size={14} color="#fff" />
+                  </View>
+                  <View style={styles.timelineRight}>
+                    <Text style={styles.locLabel}>FROM</Text>
+                    <Text style={styles.location}>{trip.pickupLocation}</Text>
+                    <Text style={[styles.locLabel, { marginTop: 10 }]}>TO</Text>
+                    <Text style={styles.location}>{trip.dropLocation}</Text>
+                  </View>
                 </View>
-                <View style={styles.timelineRight}>
-                  <Text style={styles.label}>FROM</Text>
-                  <Text style={styles.location}>{trip.pickupLocation}</Text>
-                  <Text style={[styles.label, { marginTop: 10 }]}>TO</Text>
-                  <Text style={styles.location}>{trip.dropLocation}</Text>
-                </View>
-              </View>
 
-              {/* Button */}
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => handleCompletePress(trip)}
-                disabled={loadingId === trip.id}
-              >
-                {loadingId === trip.id ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.buttonText}>Complete Trip</Text>
+                {/* Map Buttons */}
+                <View style={styles.mapRow}>
+                  <TouchableOpacity
+                    style={styles.mapButton}
+                    onPress={() =>
+                      Linking.openURL(
+                        `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(trip.pickupLocation)}`
+                      )
+                    }
+                  >
+                    <Feather name="map-pin" size={14} color="#4F8EF7" />
+                    <Text style={styles.mapButtonText}>To Pickup</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.dropButton}
+                    onPress={() =>
+                      Linking.openURL(
+                        `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(trip.pickupLocation)}&destination=${encodeURIComponent(trip.dropLocation)}`
+                      )
+                    }
+                  >
+                    <Feather name="navigation" size={14} color="#bbb" />
+                    <Text style={styles.dropText}>To Drop-off</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Base Amount */}
+                {trip.estimateAmount && (
+                  <View style={styles.amountCard}>
+                    <Text style={styles.amountLabel}>BASE AMOUNT</Text>
+                    <Text style={styles.amount}>₹{trip.estimateAmount}</Text>
+                  </View>
                 )}
-              </TouchableOpacity>
 
-            </View>
-          ))
+                {/* Action Buttons */}
+                {isConfirmed ? (
+                  <View style={styles.btnRow}>
+                    <TouchableOpacity
+                      style={styles.startButton}
+                      onPress={() => { setSelectedTrip(trip); setStartModal(true); }}
+                      disabled={loadingId === trip.id}
+                    >
+                      {loadingId === trip.id
+                        ? <ActivityIndicator color="#fff" />
+                        : <Text style={styles.buttonText}>Start Trip</Text>}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={() => { setSelectedTrip(trip); setCancelModal(true); }}
+                      disabled={loadingId === trip.id}
+                    >
+                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.completeButton}
+                    onPress={() => { setSelectedTrip(trip); setCompleteModal(true); }}
+                    disabled={loadingId === trip.id}
+                  >
+                    {loadingId === trip.id
+                      ? <ActivityIndicator color="#fff" />
+                      : <Text style={styles.buttonText}>Complete Trip</Text>}
+                  </TouchableOpacity>
+                )}
+
+              </View>
+            );
+          })
         )}
       </ScrollView>
 
-      {/* 🔥 Custom Complete Trip Modal */}
-      <Modal visible={modalVisible} transparent animationType="fade">
+      {/* ── Complete Trip Modal ── */}
+      <Modal visible={completeModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Complete Trip</Text>
-            <Text style={styles.modalSub}>Mark this trip as completed?</Text>
+
+            <View style={styles.modalHeaderRow}>
+              <View style={styles.successIcon}>
+                <Feather name="check-circle" size={24} color="#16A34A" />
+              </View>
+              <Text style={styles.modalTitle}>Complete Trip</Text>
+            </View>
 
             {selectedTrip && (
-              <View style={styles.modalTimelineRow}>
-                <View style={styles.modalTimelineLeft}>
-                  <View style={styles.modalOuterDot}><View style={styles.modalInnerDot} /></View>
-                  <View style={styles.modalLine} />
-                  <Feather name="map-pin" size={14} color="#000" />
+              <>
+                <View style={styles.completAmountCard}>
+                  <Text style={styles.completAmountLabel}>FINAL AMOUNT</Text>
+                  <Text style={styles.completAmountValue}>₹{selectedTrip.finalAmount || selectedTrip.estimateAmount}</Text>
+                  <Text style={styles.completAmountNote}>*Includes ₹100/hr extra charge if applicable</Text>
                 </View>
-                <View style={styles.timelineRight}>
-                  <Text style={styles.modalLabel}>FROM</Text>
-                  <Text style={styles.modalLocation}>{selectedTrip.pickupLocation}</Text>
-                  <Text style={[styles.modalLabel, { marginTop: 6 }]}>TO</Text>
-                  <Text style={styles.modalLocation}>{selectedTrip.dropLocation}</Text>
+
+                <View style={styles.modalTimelineRow}>
+                  <View style={styles.modalTimelineLeft}>
+                    <View style={styles.modalOuterDot}><View style={styles.modalInnerDot} /></View>
+                    <View style={styles.modalLine} />
+                    <Feather name="map-pin" size={14} color="#000" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.modalLabel}>FROM</Text>
+                    <Text style={styles.modalLocation}>{selectedTrip.pickupLocation}</Text>
+                    <Text style={[styles.modalLabel, { marginTop: 6 }]}>TO</Text>
+                    <Text style={styles.modalLocation}>{selectedTrip.dropLocation}</Text>
+                  </View>
                 </View>
-              </View>
+
+                <View style={styles.customerCard}>
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>
+                      {selectedTrip.customer?.name?.charAt(0) || 'C'}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={styles.customerLabel}>CUSTOMER</Text>
+                    <Text style={styles.customerName}>{selectedTrip.customer?.name}</Text>
+                  </View>
+                </View>
+              </>
             )}
 
             <View style={styles.modalBtnRow}>
-              <TouchableOpacity
-                style={styles.modalCancelBtn}
-                onPress={() => {
-                  setModalVisible(false);
-                  setSelectedTrip(null);
-                }}
-                disabled={loadingId === selectedTrip?.id}
-              >
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => { setCompleteModal(false); setSelectedTrip(null); }}>
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.modalConfirmBtn}
-                onPress={() => {
-                  if (selectedTrip) completeTrip(selectedTrip.id);
-                }}
-                disabled={loadingId === selectedTrip?.id}
-              >
-                {loadingId === selectedTrip?.id ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Text style={styles.modalConfirmText}>Complete</Text>
-                )}
+              <TouchableOpacity style={styles.modalConfirmBtn} onPress={completeTrip} disabled={loadingId === selectedTrip?.id}>
+                {loadingId === selectedTrip?.id
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.modalConfirmText}>Complete</Text>}
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
+
+      {/* ── Cancel Trip Modal ── */}
+      <Modal visible={cancelModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Cancel Trip</Text>
+            <Text style={styles.modalSub}>Are you sure you want to request cancellation?</Text>
+            <View style={styles.warningBox}>
+              <Text style={styles.warningIcon}>⚠️</Text>
+              <Text style={styles.warningText}>
+                This request will be sent to Admin.{'\n'}If approved, 1 duty will be deducted.
+              </Text>
+            </View>
+            <View style={styles.modalBtnRow}>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => { setCancelModal(false); setSelectedTrip(null); }}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalConfirmBtn, { backgroundColor: '#EF4444' }]} onPress={requestCancel} disabled={loadingId === selectedTrip?.id}>
+                {loadingId === selectedTrip?.id
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.modalConfirmText}>Request Cancellation</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Start Trip Photo Modal ── */}
+      <Modal visible={startModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Start Trip</Text>
+            <Text style={styles.modalSub}>Take photos before starting</Text>
+
+            <Text style={styles.photoLabel}>CAR FRONT VIEW</Text>
+            <TouchableOpacity style={styles.photoBox} onPress={() => takePhoto('front')}>
+              {frontPhoto
+                ? <Image source={{ uri: frontPhoto.uri }} style={styles.photoPreview} />
+                : <><Feather name="camera" size={24} color="#888" /><Text style={styles.photoHint}>Take Photo</Text></>}
+            </TouchableOpacity>
+
+            <Text style={styles.photoLabel}>CAR BACK VIEW</Text>
+            <TouchableOpacity style={styles.photoBox} onPress={() => takePhoto('back')}>
+              {backPhoto
+                ? <Image source={{ uri: backPhoto.uri }} style={styles.photoPreview} />
+                : <><Feather name="camera" size={24} color="#888" /><Text style={styles.photoHint}>Take Photo</Text></>}
+            </TouchableOpacity>
+
+            <View style={styles.modalBtnRow}>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={resetStartFlow}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalConfirmBtn, (!frontPhoto || !backPhoto) && { backgroundColor: '#ccc' }]}
+                onPress={handleSendOTP}
+                disabled={!frontPhoto || !backPhoto || otpLoading}
+              >
+                {otpLoading
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.modalConfirmText}>Send OTP</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── OTP Modal ── */}
+      <Modal visible={otpModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.otpIconWrap}>
+              <Feather name="lock" size={32} color="#fff" />
+            </View>
+            <Text style={styles.modalTitle}>Verify OTP</Text>
+            <Text style={styles.modalSub}>Enter 6 digit code sent to customer</Text>
+            <TextInput
+              style={styles.otpInput}
+              placeholder="______"
+              placeholderTextColor="#ccc"
+              keyboardType="number-pad"
+              maxLength={6}
+              value={otp}
+              onChangeText={setOtp}
+            />
+            <TouchableOpacity onPress={handleSendOTP} disabled={otpLoading}>
+              <Text style={styles.resendText}>Resend OTP</Text>
+            </TouchableOpacity>
+            <View style={styles.modalBtnRow}>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => { setOtpModal(false); setOtp(''); }}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalConfirmBtn, otp.length !== 6 && { backgroundColor: '#ccc' }]}
+                onPress={handleConfirmStart}
+                disabled={otp.length !== 6 || otpLoading}
+              >
+                {otpLoading
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.modalConfirmText}>Confirm Start</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Info / Alert Modal ── */}
+      <Modal visible={infoModal.visible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.alertContainer}>
+            <View style={[styles.alertHeader, infoModal.success && { backgroundColor: '#22c55e' }]}>
+              <Feather name={infoModal.success ? 'check-circle' : 'alert-triangle'} size={42} color="#fff" />
+            </View>
+            <View style={styles.alertBody}>
+              <Text style={styles.alertTitle}>{infoModal.title}</Text>
+              <Text style={styles.alertMessage}>{infoModal.message}</Text>
+              <TouchableOpacity style={styles.alertButton} onPress={hideInfo}>
+                <Text style={styles.alertButtonText}>Okay, Understood</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 };
@@ -214,114 +495,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#F4F4F4',
     paddingHorizontal: 15,
   },
-
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 15,
+  },
+  greenDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#22c55e',
+    marginRight: 8,
+    elevation: 4,
+  },
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    marginVertical: 15,
-  },
-
-  empty: {
-    textAlign: 'center',
-    marginTop: 30,
-    color: '#777',
-  },
-
-  card: {
-    backgroundColor: '#000',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 15,
-  },
-
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
-  onTrip: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-
-  badge: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-
-  divider: {
-    height: 1,
-    backgroundColor: '#333',
-    marginVertical: 10,
-  },
-
-  label: {
-    color: '#888',
-    fontSize: 11,
-  },
-
-  location: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-
-  button: {
-    backgroundColor: '#22c55e',
-    marginTop: 15,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-
-  timelineRow: {
-    flexDirection: 'row',
-    marginTop: 12,
-  },
-  timelineLeft: {
-    alignItems: 'center',
-    marginRight: 10,
-    paddingTop: 4,
-  },
-  timelineRight: {
-    flex: 1,
-  },
-  outerDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  innerDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#fff',
-  },
-  line: {
-    width: 2,
-    flex: 1,
-    backgroundColor: '#666',
-    marginVertical: 6,
-    borderRadius: 2,
   },
   emptyBox: {
     backgroundColor: '#f3f3f3',
@@ -333,132 +522,122 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
+  emptyIcon: { fontSize: 40, marginBottom: 10 },
+  emptyTitle: { fontSize: 16, fontWeight: '600', color: '#444', marginBottom: 5 },
+  emptySub: { fontSize: 13, color: '#777', textAlign: 'center' },
 
-  emptyIcon: {
-    fontSize: 40,
-    marginBottom: 10,
-  },
-
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#444',
-    marginBottom: 5,
-  },
-
-  emptySub: {
-    fontSize: 13,
-    color: '#777',
-    textAlign: 'center',
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 15,
-  },
-
-  greenDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#22c55e',
-    marginRight: 8,
-    shadowColor: '#22c55e',
-    shadowOpacity: 0.6,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-
-  /* Modal Styles */
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  modalSub: {
-    color: '#666',
-    marginBottom: 20,
-  },
-  modalTimelineRow: {
-    flexDirection: 'row',
-    marginBottom: 25,
-    backgroundColor: '#f9f9f9',
-    padding: 15,
-    borderRadius: 12,
-  },
-  modalTimelineLeft: {
-    alignItems: 'center',
-    marginRight: 10,
-    paddingTop: 4,
-  },
-  modalOuterDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalInnerDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+  // Trip Card
+  card: {
     backgroundColor: '#000',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 15,
   },
-  modalLine: {
-    width: 1.5,
-    flex: 1,
-    minHeight: 15,
-    backgroundColor: '#ccc',
-    marginVertical: 2,
+  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  onTrip: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+  badge: { backgroundColor: '#fff', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  badgeText: { fontSize: 12, fontWeight: '600' },
+  divider: { height: 1, backgroundColor: '#333', marginVertical: 10 },
+  timelineRow: { flexDirection: 'row', marginTop: 4 },
+  timelineLeft: { alignItems: 'center', marginRight: 10, paddingTop: 4 },
+  timelineRight: { flex: 1 },
+  outerDot: { width: 12, height: 12, borderRadius: 6, borderWidth: 2, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  innerDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#fff' },
+  line: { width: 2, flex: 1, backgroundColor: '#666', marginVertical: 6, borderRadius: 2 },
+  locLabel: { color: '#888', fontSize: 11 },
+  location: { color: '#fff', fontSize: 14, fontWeight: '600', marginTop: 2 },
+
+  // Map buttons
+  mapRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  mapButton: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#0f172a', borderRadius: 8, paddingVertical: 10, gap: 6,
+    borderWidth: 1, borderColor: '#1e3a5f',
   },
-  modalLabel: {
-    fontSize: 11,
-    color: '#888',
-    fontWeight: 'bold',
+  mapButtonText: { color: '#4F8EF7', fontSize: 13, fontWeight: '600' },
+  dropButton: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#1a1a1a', borderRadius: 8, paddingVertical: 10, gap: 6,
+    borderWidth: 1, borderColor: '#333',
   },
-  modalLocation: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-    marginTop: 2,
+  dropText: { color: '#bbb', fontSize: 13, fontWeight: '600' },
+
+  // Amount
+  amountCard: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: '#111', borderRadius: 10, padding: 12, marginTop: 12,
   },
-  modalBtnRow: {
-    flexDirection: 'row',
-    gap: 12,
+  amountLabel: { color: '#888', fontSize: 11, fontWeight: '700' },
+  amount: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+
+  // Buttons
+  btnRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  startButton: { flex: 1, backgroundColor: '#22c55e', paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
+  cancelButton: { flex: 1, backgroundColor: '#1a1a1a', paddingVertical: 12, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#EF4444' },
+  cancelButtonText: { color: '#EF4444', fontWeight: 'bold' },
+  completeButton: { backgroundColor: '#22c55e', marginTop: 14, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
+  buttonText: { color: '#fff', fontWeight: 'bold' },
+
+  // Modal base
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', padding: 20 },
+  modalContent: { backgroundColor: '#fff', borderRadius: 16, padding: 20 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 5 },
+  modalSub: { color: '#666', marginBottom: 16 },
+  modalBtnRow: { flexDirection: 'row', gap: 12, marginTop: 10 },
+  modalCancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: '#eee', alignItems: 'center' },
+  modalCancelText: { fontWeight: 'bold', color: '#333' },
+  modalConfirmBtn: { flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: '#22c55e', alignItems: 'center' },
+  modalConfirmText: { fontWeight: 'bold', color: '#fff' },
+
+  modalHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  successIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#E8F8EC', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  completAmountCard: { backgroundColor: '#E9FAEC', borderRadius: 14, padding: 20, marginBottom: 15, alignItems: 'center' },
+  completAmountLabel: { fontSize: 13, fontWeight: '700', color: '#4B5563' },
+  completAmountValue: { fontSize: 42, fontWeight: 'bold', color: '#16A34A', marginVertical: 8 },
+  completAmountNote: { fontSize: 11, color: '#4B5563', textAlign: 'center' },
+  customerCard: { backgroundColor: '#F8F8F8', borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', marginTop: 15 },
+  avatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#ECECEC', justifyContent: 'center', alignItems: 'center', marginRight: 14 },
+  avatarText: { fontWeight: 'bold', fontSize: 18 },
+  customerLabel: { color: '#888', fontSize: 11, fontWeight: '700' },
+  customerName: { fontSize: 18, fontWeight: '700', color: '#111' },
+
+  // Timeline in modal
+  modalTimelineRow: { flexDirection: 'row', marginBottom: 20, backgroundColor: '#f9f9f9', padding: 15, borderRadius: 12 },
+  modalTimelineLeft: { alignItems: 'center', marginRight: 10, paddingTop: 4 },
+  modalOuterDot: { width: 12, height: 12, borderRadius: 6, borderWidth: 2, borderColor: '#000', alignItems: 'center', justifyContent: 'center' },
+  modalInnerDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#000' },
+  modalLine: { width: 1.5, flex: 1, minHeight: 15, backgroundColor: '#ccc', marginVertical: 2 },
+  modalLabel: { fontSize: 11, color: '#888', fontWeight: 'bold' },
+  modalLocation: { fontSize: 14, fontWeight: '600', color: '#000', marginTop: 2 },
+
+  // Cancel warning
+  warningBox: { flexDirection: 'row', backgroundColor: '#FEF2F2', borderRadius: 10, padding: 14, marginBottom: 16, alignItems: 'flex-start', gap: 10 },
+  warningIcon: { fontSize: 20 },
+  warningText: { flex: 1, color: '#b91c1c', fontSize: 13, lineHeight: 20 },
+
+  // Photo
+  photoLabel: { fontSize: 11, fontWeight: '700', color: '#888', marginTop: 14, marginBottom: 6 },
+  photoBox: {
+    height: 110, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed',
+    borderColor: '#d1d5db', backgroundColor: '#fafafa', alignItems: 'center', justifyContent: 'center', gap: 6,
   },
-  modalCancelBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: '#eee',
-    alignItems: 'center',
+  photoPreview: { width: '100%', height: '100%', borderRadius: 10 },
+  photoHint: { fontSize: 12, color: '#888' },
+
+  // OTP
+  otpIconWrap: { backgroundColor: '#000', width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 12 },
+  otpInput: {
+    borderWidth: 1.5, borderColor: '#e5e7eb', borderRadius: 12, height: 52,
+    textAlign: 'center', fontSize: 22, letterSpacing: 8, marginVertical: 14, color: '#000',
   },
-  modalCancelText: {
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  modalConfirmBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: '#22c55e',
-    alignItems: 'center',
-  },
-  modalConfirmText: {
-    fontWeight: 'bold',
-    color: '#fff',
-  },
+  resendText: { textAlign: 'center', color: '#3B82F6', fontWeight: '600', marginBottom: 10 },
+
+  // Info/Alert modal
+  alertContainer: { backgroundColor: '#fff', borderRadius: 18, overflow: 'hidden', elevation: 12 },
+  alertHeader: { backgroundColor: '#EF4444', paddingVertical: 24, alignItems: 'center' },
+  alertBody: { padding: 20, alignItems: 'center' },
+  alertTitle: { fontSize: 20, fontWeight: '700', color: '#111', marginBottom: 8 },
+  alertMessage: { fontSize: 14, color: '#666', textAlign: 'center', lineHeight: 22, marginBottom: 20 },
+  alertButton: { backgroundColor: '#000', width: '100%', borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
+  alertButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

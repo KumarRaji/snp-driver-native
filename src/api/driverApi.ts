@@ -108,3 +108,18 @@ export const respondRequest = (id: string, action: string) =>
 // 🏁 Complete Trip
 export const completeTripAPI = (id: string) =>
   apiCall(`${BASE_URL}/trips/${id}/complete`, { method: 'POST' });
+
+// 🚀 Send Start OTP
+export const sendStartOTP = (id: string) =>
+  apiCall(`${BASE_URL}/trips/${id}/send-start-otp`, { method: 'POST' });
+
+// ✅ Start Trip (verify OTP)
+export const startTripAPI = (id: string, otp: string) =>
+  apiCall(`${BASE_URL}/trips/${id}/start`, {
+    method: 'POST',
+    body: JSON.stringify({ otp }),
+  });
+
+// ❌ Request Cancel
+export const requestCancelAPI = (id: string) =>
+  apiCall(`${BASE_URL}/trips/${id}/request-cancel`, { method: 'POST' });

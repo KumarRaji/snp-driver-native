@@ -9,6 +9,12 @@ import { getTrips, handleLogoutIfRequired } from '../api/driverApi';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 
+const formatDateTime = (value: string) => {
+  if (!value) return '';
+  const d = new Date(value);
+  return d.toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true });
+};
+
 const TripsScreen = () => {
   const [trips, setTrips] = useState<any[]>([]);
   const navigation = useNavigation<any>();
@@ -132,10 +138,16 @@ const TripsScreen = () => {
 
             {/* Top Row */}
             <View style={styles.topRow}>
-              <Text style={styles.date}>
-                {trip.startDate} • {trip.startTime}
-              </Text>
-
+              <View>
+                <Text style={styles.startText}>
+                  Start: {formatDateTime(trip.actualStartTime || `${trip.startDate}T${trip.startTime}`)}
+                </Text>
+                {!!trip.completedAt && (
+                  <Text style={styles.endText}>
+                    Ended: {formatDateTime(trip.completedAt)}
+                  </Text>
+                )}
+              </View>
               <View style={styles.completedBadge}>
                 <Text style={styles.completedText}>Completed</Text>
               </View>
@@ -158,11 +170,34 @@ const TripsScreen = () => {
 
             {/* Bottom Row */}
             <View style={styles.bottomRow}>
-              <View />
-
-              <Text style={styles.amount}>
-                ₹{trip.estimatedCost || trip.estimateAmount || 0}
-              </Text>
+              <View>
+                <View style={styles.serviceRow}>
+                  <Text style={styles.serviceType}>{trip.serviceType}</Text>
+                  {!!trip.duration && (
+                    <View style={styles.durationBadge}>
+                      <Feather name="clock" size={12} color="#666" />
+                      <Text style={styles.durationText}>{trip.duration}</Text>
+                    </View>
+                  )}
+                </View>
+                {!!trip.rating && (
+                  <View style={styles.ratingContainer}>
+                    <Text style={styles.star}>{'★'.repeat(trip.rating)}</Text>
+                    {!!trip.feedback && (
+                      <Text style={styles.feedback}>"{trip.feedback}"</Text>
+                    )}
+                  </View>
+                )}
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={styles.amountLabel}>FINAL AMOUNT</Text>
+                <Text style={styles.amount}>₹{trip.finalAmount || trip.estimateAmount || 0}</Text>
+                {(trip.finalAmount || 0) > (trip.estimateAmount || 0) && (
+                  <Text style={styles.extraText}>
+                    Includes ₹{(trip.finalAmount || 0) - (trip.estimateAmount || 0)} Extra
+                  </Text>
+                )}
+              </View>
             </View>
 
           </View>
@@ -317,8 +352,20 @@ const styles = StyleSheet.create({
   amount: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#16a34a',
   },
+
+  startText: { fontSize: 12, color: '#666', fontWeight: '700' },
+  endText: { fontSize: 12, color: '#16a34a', fontWeight: '700', marginTop: 2 },
+  serviceRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  serviceType: { fontSize: 13, color: '#555', marginRight: 8 },
+  durationBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f3f4f6', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3 },
+  durationText: { marginLeft: 4, fontSize: 11, color: '#666' },
+  amountLabel: { fontSize: 10, color: '#888', fontWeight: '700' },
+  extraText: { color: '#dc2626', fontSize: 10, marginTop: 4, fontWeight: '600' },
+  ratingContainer: { marginTop: 4 },
+  star: { color: '#FBBF24', fontSize: 16 },
+  feedback: { color: '#666', fontStyle: 'italic', fontSize: 12, marginTop: 2 },
 
   timelineRow: {
     flexDirection: 'row',
