@@ -156,6 +156,7 @@ const PackagesScreen = () => {
             </Text>
 
             {/* BUTTON */}
+            <Text style={styles.paymentNote}>One time payment • Non-Refundable</Text>
             <TouchableOpacity
               style={[
                 styles.button,
@@ -296,6 +297,7 @@ const styles = StyleSheet.create({
     color: '#777',
     marginLeft: 6,
     marginBottom: 2,
+    fontWeight: '700',
   },
 
   desc: {
@@ -303,6 +305,14 @@ const styles = StyleSheet.create({
     color: '#777',
     marginTop: 8,
     marginBottom: 12,
+  },
+
+  paymentNote: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#888',
+    textAlign: 'center',
+    marginBottom: 6,
   },
 
   button: {

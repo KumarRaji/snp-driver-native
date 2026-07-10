@@ -7,13 +7,14 @@ import {
     StyleSheet,
     ActivityIndicator,
     ImageBackground,
-    Alert,
+    Modal,
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../api/config';
+import { Feather } from '@expo/vector-icons';
 
 const LoginScreen = () => {
     const navigation = useNavigation<any>();
@@ -21,12 +22,16 @@ const LoginScreen = () => {
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [modal, setModal] = useState({ visible: false, title: '', message: '' });
+
+    const showModal = (title: string, message: string) => setModal({ visible: true, title, message });
+    const hideModal = () => setModal({ visible: false, title: '', message: '' });
 
     const isLoginDisabled = !phone || !password || loading;
 
     const handleLogin = async () => {
         if (!phone || !password) {
-            Alert.alert('Error', 'Enter phone and password');
+            showModal('Required', 'Enter phone number and password.');
             return;
         }
 
@@ -78,16 +83,13 @@ const LoginScreen = () => {
                     errorMessage = 'An unexpected server error occurred. Please try again later.';
                 }
 
-                Alert.alert(
-                    'Login Failed',
-                    errorMessage
-                );
+                showModal('Access Denied', errorMessage);
             }
         } catch (error: any) {
             console.error("LOGIN ERROR:", error);
             const isNetworkError = error?.message?.toLowerCase().includes('fetch') || error?.message?.toLowerCase().includes('network');
             const errorTitle = isNetworkError ? 'Network Error' : 'Error';
-            Alert.alert(errorTitle, error?.message || 'An unexpected error occurred');
+            showModal(errorTitle, error?.message || 'An unexpected error occurred');
         } finally {
             setLoading(false);
         }
@@ -162,6 +164,23 @@ const LoginScreen = () => {
                 </View>
             </View>
             </KeyboardAvoidingView>
+
+            <Modal visible={modal.visible} transparent animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalHeader}>
+                            <Feather name="alert-triangle" size={48} color="#fff" />
+                        </View>
+                        <View style={styles.modalBody}>
+                            <Text style={styles.modalTitle}>{modal.title}</Text>
+                            <Text style={styles.modalMessage}>{modal.message}</Text>
+                            <TouchableOpacity style={styles.modalButton} onPress={hideModal}>
+                                <Text style={styles.modalButtonText}>Okay, Understood</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </ImageBackground>
     );
 };
@@ -238,5 +257,52 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         textAlign: 'center',
         marginBottom: 20,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.65)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContainer: {
+        width: '78%',
+        backgroundColor: '#fff',
+        borderRadius: 18,
+        overflow: 'hidden',
+        elevation: 12,
+    },
+    modalHeader: {
+        backgroundColor: '#EF4444',
+        paddingVertical: 20,
+        alignItems: 'center',
+    },
+    modalBody: {
+        padding: 16,
+        alignItems: 'center',
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#111',
+        marginBottom: 8,
+    },
+    modalMessage: {
+        fontSize: 14,
+        color: '#666',
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 18,
+    },
+    modalButton: {
+        backgroundColor: '#000',
+        width: '100%',
+        borderRadius: 12,
+        paddingVertical: 12,
+        alignItems: 'center',
+    },
+    modalButtonText: {
+        color: '#fff',
+        fontWeight: '700',
+        fontSize: 15,
     },
 });
