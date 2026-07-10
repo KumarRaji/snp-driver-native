@@ -78,7 +78,10 @@ const ProfileScreen = () => {
             style={styles.backBtn}
             onPress={() => navigation.goBack()}
           >
-            <Feather name="arrow-left" size={24} color="#000" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Feather name="arrow-left" size={20} color="#000" />
+              <Text style={{ fontSize: 14, color: '#000', fontWeight: '600' }}>Back</Text>
+            </View>
           </TouchableOpacity>
 
           <View style={styles.avatarContainer}>
