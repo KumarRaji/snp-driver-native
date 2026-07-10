@@ -207,7 +207,7 @@ const ProfileScreen = () => {
           <Text style={styles.sectionTitle}>Payment & Contact</Text>
 
           <View style={styles.infoRow}>
-            <Text style={styles.label}>UPI ID</Text>
+            <Text style={styles.label}>Gpay/PhonePe number</Text>
             <Text style={styles.rowValue}>{profile?.gpayNo || profile?.phonepeNo || 'Not set'}</Text>
           </View>
         </View>

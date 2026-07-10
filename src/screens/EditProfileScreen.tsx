@@ -31,8 +31,9 @@ const EditProfileScreen = () => {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: profile.name || '',
-    email: profile.email || '',
     phone: profile.phone || '',
+    currentAddress: profile.currentAddress || '',
+    permanentAddress: profile.permanentAddress || '',
     aadharNo: profile.aadharNo || '',
     licenseNo: profile.licenseNo || '',
     alternateMobile1: profile.alternateMobile1 || '',
@@ -40,7 +41,7 @@ const EditProfileScreen = () => {
     alternateMobile3: profile.alternateMobile3 || '',
     alternateMobile4: profile.alternateMobile4 || '',
     gpayNo: profile.gpayNo || profile.phonepeNo || '',
-    password: '',
+    password: ''
   });
 
   const [images, setImages] = useState<any>({});
@@ -91,16 +92,19 @@ const EditProfileScreen = () => {
       const uploadedDl = images.dlPhoto ? await uploadFile(images.dlPhoto) : undefined;
       const uploadedPan = images.panPhoto ? await uploadFile(images.panPhoto) : undefined;
       const uploadedAadhar = images.aadharPhoto ? await uploadFile(images.aadharPhoto) : undefined;
+      const uploadedPolice = images.policeVerificationPhoto ? await uploadFile(images.policeVerificationPhoto) : undefined;
 
-      // Extract password so it isn't automatically spread into the payload
       const { password, ...restForm } = form;
 
       const payload: any = {
         ...restForm,
+        currentAddress: form.currentAddress,
+        permanentAddress: form.permanentAddress,
         ...(uploadedPhoto && { photo: uploadedPhoto }),
         ...(uploadedDl && { dlPhoto: uploadedDl }),
         ...(uploadedPan && { panPhoto: uploadedPan }),
         ...(uploadedAadhar && { aadharPhoto: uploadedAadhar }),
+        ...(uploadedPolice && { policeVerificationPhoto: uploadedPolice }),
       };
 
       // Only append the password to the payload if the user typed a new one
@@ -153,8 +157,9 @@ const EditProfileScreen = () => {
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         {[
           { key: 'name', label: 'Full Name' },
-          { key: 'email', label: 'Email', type: 'email-address' },
           { key: 'phone', label: 'Phone', type: 'phone-pad' },
+          { key: 'currentAddress', label: 'Current Address', multiline: true },
+          { key: 'permanentAddress', label: 'Permanent Address', multiline: true },
           { key: 'password', label: 'Change Password', secureTextEntry: true, placeholder: 'Enter new password (leave blank to keep current)', autoCapitalize: 'none', autoCorrect: false },
           { key: 'aadharNo', label: 'Aadhar Number', type: 'numeric' },
           { key: 'licenseNo', label: 'License Number' },
@@ -162,12 +167,12 @@ const EditProfileScreen = () => {
           { key: 'alternateMobile2', label: 'Alternate Phone 2', type: 'phone-pad' },
           { key: 'alternateMobile3', label: 'Alternate Phone 3', type: 'phone-pad' },
           { key: 'alternateMobile4', label: 'Alternate Phone 4', type: 'phone-pad' },
-          { key: 'gpayNo', label: 'UPI ID (GPay/PhonePe)' },
+          { key: 'gpayNo', label: 'Gpay/PhonePe number' },
         ].map((field) => (
           <View key={field.key} style={styles.inputGroup}>
             <Text style={styles.label}>{field.label}</Text>
             <TextInput
-              style={styles.input}
+              style={(field as any).multiline ? [styles.input, { height: 90, textAlignVertical: 'top' }] : styles.input}
               value={(form as any)[field.key]}
               onChangeText={(text) => handleChange(field.key, text)}
               keyboardType={(field.type as any) || 'default'}
@@ -176,6 +181,8 @@ const EditProfileScreen = () => {
               placeholderTextColor={(field as any).placeholder ? '#999' : undefined}
               autoCapitalize={(field as any).autoCapitalize}
               autoCorrect={(field as any).autoCorrect}
+              multiline={(field as any).multiline || false}
+              numberOfLines={(field as any).multiline ? 3 : undefined}
             />
           </View>
         ))}
@@ -188,6 +195,7 @@ const EditProfileScreen = () => {
             { key: 'dlPhoto', label: 'Driving License', icon: 'file-text' },
             { key: 'panPhoto', label: 'PAN Card', icon: 'credit-card' },
             { key: 'aadharPhoto', label: 'Aadhar Card', icon: 'file' },
+            { key: 'policeVerificationPhoto', label: 'Police Verification', icon: 'shield' },
           ].map((item) => {
             const currentImage = images[item.key]?.uri || profile[item.key];
             return (
