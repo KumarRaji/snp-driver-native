@@ -187,7 +187,7 @@ const HomeScreen = () => {
           </View>
         ) : (
           activeTrips.map((trip) => {
-            const isConfirmed = trip.status === 'CONFIRMED' || trip.status === 'ACCEPTED';
+            const isUpcoming = trip.status === 'CONFIRMED' || trip.status === 'ACCEPTED';
             return (
               <View key={trip.id} style={styles.card}>
 
@@ -195,9 +195,9 @@ const HomeScreen = () => {
                 <View style={styles.topRow}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Text style={styles.onTrip}>
-                      {isConfirmed ? 'Confirmed' : 'On Trip'}
+                      {trip.status === 'ONGOING' ? 'On Trip' : 'Upcoming'}
                     </Text>
-                    {!isConfirmed && trip.actualStartTime && (
+                    {trip.status === 'ONGOING' && trip.actualStartTime && (
                       <View style={{ marginLeft: 8 }}>
                         <TripTimer startTime={trip.actualStartTime} />
                       </View>
@@ -261,7 +261,7 @@ const HomeScreen = () => {
                 )}
 
                 {/* Action Buttons */}
-                {isConfirmed ? (
+                {isUpcoming ? (
                   <View style={styles.btnRow}>
                     <TouchableOpacity
                       style={styles.startButton}
@@ -270,7 +270,11 @@ const HomeScreen = () => {
                     >
                       {loadingId === trip.id
                         ? <ActivityIndicator color="#fff" />
-                        : <Text style={styles.buttonText}>Start Trip</Text>}
+                        : <>
+                            <Feather name="play" size={16} color="#fff" />
+                            <Text style={styles.buttonText}>Start Trip</Text>
+                          </>
+                      }
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -278,6 +282,7 @@ const HomeScreen = () => {
                       onPress={() => { setSelectedTrip(trip); setCancelModal(true); }}
                       disabled={loadingId === trip.id}
                     >
+                      <Feather name="x" size={18} color="#EF4444" />
                       <Text style={styles.cancelButtonText}>Cancel</Text>
                     </TouchableOpacity>
                   </View>
@@ -565,15 +570,15 @@ const styles = StyleSheet.create({
   // Amount
   amountCard: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: '#111', borderRadius: 10, padding: 12, marginTop: 12,
+    backgroundColor: '#1a1a1a', borderRadius: 10, padding: 12, marginTop: 12,
   },
   amountLabel: { color: '#888', fontSize: 11, fontWeight: '700' },
   amount: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
 
   // Buttons
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  startButton: { flex: 1, backgroundColor: '#22c55e', paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
-  cancelButton: { flex: 1, backgroundColor: '#1a1a1a', paddingVertical: 12, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#EF4444' },
+  startButton: { flex: 2, flexDirection: 'row', gap: 8, backgroundColor: '#22c55e', paddingVertical: 12, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  cancelButton: { flex: 1, flexDirection: 'row', gap: 6, backgroundColor: '#1a1a1a', paddingVertical: 12, borderRadius: 8, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#EF4444' },
   cancelButtonText: { color: '#EF4444', fontWeight: 'bold' },
   completeButton: { backgroundColor: '#22c55e', marginTop: 14, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
   buttonText: { color: '#fff', fontWeight: 'bold' },

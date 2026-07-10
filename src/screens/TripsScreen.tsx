@@ -95,7 +95,11 @@ const TripsScreen = () => {
         upcomingTrips.map((trip) => (
           <View key={trip.id} style={styles.card}>
             <View style={styles.topRow}>
-              <View style={styles.dot} />
+              <View style={styles.tripTypeBadge}>
+                <Text style={styles.tripTypeText}>
+                  {trip.serviceType || trip.tripType || trip.packageType || '-'}
+                </Text>
+              </View>
               <Text style={[styles.status, { color: getStatusColor(trip.status) }]}>
                 {trip.status}
               </Text>
@@ -280,11 +284,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  dot: {
-    width: 14,
-    height: 6,
+  tripTypeBadge: {
     backgroundColor: '#000',
-    borderRadius: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 4,
+  },
+  tripTypeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
   },
 
   status: {

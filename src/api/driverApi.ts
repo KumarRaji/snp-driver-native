@@ -26,17 +26,21 @@ export const apiCall = async (url: string, options: any = {}) => {
       const data = JSON.parse(text);
 
       // Detect deactivated or unauthorized states
-      if (
+      const isTokenError =
         data?.error === 'Access token required' ||
+        data?.error === 'Invalid token' ||
+        (typeof data?.message === 'string' && data.message.toLowerCase().includes('invalid token'));
+
+      const isDeactivated =
         data?.status === 'INACTIVE' ||
-        res.status === 401 ||
-        res.status === 403
-      ) {
-        let msg = data?.error || data?.message || 'Your session expired. Please login again.';
-        if (typeof msg === 'string' && msg.toLowerCase().includes('deactivated')) {
-          msg = 'Your account has been deactivated by admin. Please contact support.';
-        }
-        return { logout: true, message: msg };
+        (typeof data?.message === 'string' && data.message.toLowerCase().includes('deactivated'));
+
+      if (isDeactivated) {
+        return { logout: true, message: 'Your account has been deactivated by admin. Please contact support.' };
+      }
+
+      if (isTokenError && (res.status === 401 || res.status === 403)) {
+        return { logout: true, message: data?.message || 'Your session expired. Please login again.' };
       }
 
       return data;
