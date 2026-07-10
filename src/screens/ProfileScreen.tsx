@@ -104,18 +104,32 @@ const ProfileScreen = () => {
         </View>
 
         {/* STATS */}
-        <View style={styles.card}>
-          <View style={styles.statsRow}>
-            <View style={styles.iconCircle}>
-              <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <Path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </Svg>
+        <View style={styles.statsContainer}>
+          <View style={[styles.card, { flex: 1 }]}>
+            <View style={styles.statsRow}>
+              <View style={styles.iconCircle}>
+                <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </Svg>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Total Trips</Text>
+                <Text style={[styles.value, { fontSize: 20 }]}>{profile?.totalRides || 0}</Text>
+                <Text style={styles.subText}>completed</Text>
+              </View>
             </View>
-            <View>
-              <Text style={styles.label}>Total Trips completed</Text>
-              <Text style={styles.value}>
-                {profile?.totalRides || 0}
-              </Text>
+          </View>
+
+          <View style={[styles.card, { flex: 1 }]}>
+            <View style={styles.statsRow}>
+              <View style={[styles.iconCircle, { backgroundColor: '#FBBF24' }]}>
+                <Feather name="star" size={20} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Avg Rating</Text>
+                <Text style={[styles.value, { fontSize: 20 }]}>{(profile?.rating ?? 0).toFixed(1)}</Text>
+                <Text style={styles.subText}>({profile?.rating ? 1 : 0} ratings)</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -178,6 +192,14 @@ const ProfileScreen = () => {
             <Text style={styles.label}>Aadhar</Text>
             <Text style={styles.rowValue}>{profile?.aadharNo || 'Not set'}</Text>
           </View>
+          <View style={[styles.infoRow, { marginTop: 10 }]}>
+            <Text style={styles.label}>Current Address</Text>
+            <Text style={styles.rowValue}>{profile?.currentAddress || 'Not set'}</Text>
+          </View>
+          <View style={[styles.infoRow, { marginTop: 10 }]}>
+            <Text style={styles.label}>Permanent Address</Text>
+            <Text style={styles.rowValue}>{profile?.permanentAddress || 'Not set'}</Text>
+          </View>
         </View>
 
         {/* PAYMENT */}
@@ -219,9 +241,10 @@ const ProfileScreen = () => {
           <View style={styles.docGrid}>
             {[
               { label: 'Photo', uri: profile?.photo },
-              { label: 'Driving License', uri: profile?.dlPhoto },
+              { label: 'Driving License', uri: profile?.dlPhoto, expiry: profile?.licenseExpiryDate },
               { label: 'PAN Card', uri: profile?.panPhoto },
               { label: 'Aadhar Card', uri: profile?.aadharPhoto },
+              { label: 'Police Verification', uri: profile?.policeVerificationPhoto, expiry: profile?.policeVerificationExpiryDate },
             ].map((doc, i) => (
               <View key={i} style={styles.docBox}>
                 <Text style={styles.docLabel}>{doc.label}</Text>
@@ -232,9 +255,13 @@ const ProfileScreen = () => {
                     <Text style={{ color: '#999', fontSize: 12 }}>Not Uploaded</Text>
                   </View>
                 )}
+                {'expiry' in doc && (
+                  <Text style={styles.expiryText}>Expiry: {doc.expiry || 'Not set'}</Text>
+                )}
               </View>
             ))}
           </View>
+          <Text style={styles.uploadNote}>Note: Document uploaded successfully. Admin will verify it shortly.</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -321,7 +348,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
     padding: 15,
-    margin: 10,
+    marginVertical: 10,
+    marginHorizontal: 10,
     borderRadius: 12,
   },
 
@@ -399,16 +427,17 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 15,
+    gap: 12,
   },
 
   iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
+    flexShrink: 0,
   },
 
   warningIconCircle: {
@@ -440,6 +469,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
+  statsContainer: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 10,
+    marginTop: 10,
+  },
+  expiryText: {
+    fontSize: 10,
+    color: '#888',
+    marginTop: 4,
+  },
+  uploadNote: {
+    fontSize: 11,
+    color: '#6b7280',
+    marginTop: 12,
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
   docGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
