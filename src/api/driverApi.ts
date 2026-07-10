@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 
 const BASE_URL = 'https://drivemate.api.luisant.cloud/api';
+let isLoggingOut = false;
 
 const getHeaders = async () => {
   const token = await AsyncStorage.getItem('auth-token');
@@ -57,6 +58,10 @@ export const apiCall = async (url: string, options: any = {}) => {
 
 export const handleLogoutIfRequired = async (data: any, navigation: any) => {
   if (data?.logout) {
+    // Prevent multiple logout alerts
+    if (isLoggingOut) return true;
+    isLoggingOut = true;
+
     Alert.alert(
       'Account Disabled',
       data.message || 'Your account has been deactivated by admin or your session expired. Please contact support.',
@@ -65,6 +70,7 @@ export const handleLogoutIfRequired = async (data: any, navigation: any) => {
           text: 'OK',
           onPress: async () => {
             await AsyncStorage.removeItem('auth-token');
+            isLoggingOut = false;
             navigation.replace('Login');
           },
         },
