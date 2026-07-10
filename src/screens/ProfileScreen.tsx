@@ -110,29 +110,101 @@ const ProfileScreen = () => {
 
         {/* STATS */}
         <View style={styles.statsContainer}>
-          <View style={[styles.card, { flex: 1 }]}>
+          <View
+            style={[
+              styles.card,
+              {
+                flex: 1,
+                minHeight: 90,
+                justifyContent: 'center',
+              },
+            ]}
+          >
             <View style={styles.statsRow}>
               <View style={styles.iconCircle}>
                 <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                   <Path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </Svg>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Total Trips</Text>
-                <Text style={[styles.value, { fontSize: 20 }]}>{trips.length}</Text>
+              <View
+                style={{
+                  flex: 1,
+                  justifyContent: 'center',
+                }}
+              >
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    fontSize: 12,
+                    color: '#7a7a7a',
+                    fontWeight: '500',
+                  }}
+                >
+                  Total Trips
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 22,
+                    fontWeight: '700',
+                    color: '#000',
+                    marginTop: 1,
+                  }}
+                >
+                  {trips.length}
+                </Text>
               </View>
             </View>
           </View>
 
-          <View style={[styles.card, { flex: 1 }]}>
+          <View
+            style={[
+              styles.card,
+              {
+                flex: 1,
+                minHeight: 90,
+                justifyContent: 'center',
+              },
+            ]}
+          >
             <View style={styles.statsRow}>
               <View style={[styles.iconCircle, { backgroundColor: '#FBBF24' }]}>
                 <Feather name="star" size={20} color="#fff" />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Avg Rating</Text>
-                <Text style={[styles.value, { fontSize: 20 }]}>{(profile?.rating ?? 0).toFixed(1)}</Text>
-                <Text style={styles.subText}>({profile?.rating ? 1 : 0} ratings)</Text>
+              <View
+                style={{
+                  flex: 1,
+                  justifyContent: 'center',
+                }}
+              >
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    fontSize: 12,
+                    color: '#7a7a7a',
+                    fontWeight: '500',
+                  }}
+                >
+                  Avg Rating
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 22,
+                    fontWeight: '700',
+                    color: '#000',
+                    marginTop: 1,
+                  }}
+                >
+                  {(profile?.rating ?? 0).toFixed(1)}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 11,
+                    color: '#666',
+                    marginTop: 1,
+                  }}
+                >
+                  ({profile?.rating ? 1 : 0} ratings)
+                </Text>
               </View>
             </View>
           </View>
@@ -351,10 +423,18 @@ const styles = StyleSheet.create({
 
   card: {
     backgroundColor: '#fff',
-    padding: 15,
-    marginVertical: 10,
+    padding: 12,
+    marginVertical: 8,
     marginHorizontal: 10,
     borderRadius: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    elevation: 2,
   },
 
   sectionTitle: {
@@ -431,16 +511,16 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
   },
 
   iconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 10,
     flexShrink: 0,
   },
 
@@ -475,10 +555,10 @@ const styles = StyleSheet.create({
 
   statsContainer: {
     flexDirection: 'row',
-    gap: 10,
+    justifyContent: 'space-between',
     paddingHorizontal: 10,
     marginTop: 10,
-    height: 120,
+    gap: 10,
   },
   expiryText: {
     fontSize: 10,
