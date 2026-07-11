@@ -7,14 +7,13 @@ import {
     StyleSheet,
     ActivityIndicator,
     ImageBackground,
-    Modal,
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../api/config';
-import { Feather } from '@expo/vector-icons';
+import CustomAlert from '../components/CustomAlert';
 
 const LoginScreen = () => {
     const navigation = useNavigation<any>();
@@ -165,22 +164,12 @@ const LoginScreen = () => {
             </View>
             </KeyboardAvoidingView>
 
-            <Modal visible={modal.visible} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContainer}>
-                        <View style={styles.modalHeader}>
-                            <Feather name="alert-triangle" size={48} color="#fff" />
-                        </View>
-                        <View style={styles.modalBody}>
-                            <Text style={styles.modalTitle}>{modal.title}</Text>
-                            <Text style={styles.modalMessage}>{modal.message}</Text>
-                            <TouchableOpacity style={styles.modalButton} onPress={hideModal}>
-                                <Text style={styles.modalButtonText}>Okay, Understood</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+            <CustomAlert
+                visible={modal.visible}
+                title={modal.title}
+                message={modal.message}
+                onClose={hideModal}
+            />
         </ImageBackground>
     );
 };
@@ -257,52 +246,5 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         textAlign: 'center',
         marginBottom: 20,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.65)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalContainer: {
-        width: '78%',
-        backgroundColor: '#fff',
-        borderRadius: 18,
-        overflow: 'hidden',
-        elevation: 12,
-    },
-    modalHeader: {
-        backgroundColor: '#EF4444',
-        paddingVertical: 20,
-        alignItems: 'center',
-    },
-    modalBody: {
-        padding: 16,
-        alignItems: 'center',
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: '#111',
-        marginBottom: 8,
-    },
-    modalMessage: {
-        fontSize: 14,
-        color: '#666',
-        textAlign: 'center',
-        lineHeight: 20,
-        marginBottom: 18,
-    },
-    modalButton: {
-        backgroundColor: '#000',
-        width: '100%',
-        borderRadius: 12,
-        paddingVertical: 12,
-        alignItems: 'center',
-    },
-    modalButtonText: {
-        color: '#fff',
-        fontWeight: '700',
-        fontSize: 15,
     },
 });

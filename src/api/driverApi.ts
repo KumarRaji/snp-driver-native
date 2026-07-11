@@ -84,6 +84,41 @@ export const handleLogoutIfRequired = async (data: any, navigation: any) => {
 // 👤 Profile
 export const getProfile = () => apiCall(`${BASE_URL}/auth/profile`);
 
+// 🗑️ Delete Account
+export const deleteAccount = async () => {
+  const headers = await getHeaders();
+  if (!headers) return { logout: true };
+
+  const endpoints = [
+    `${BASE_URL}/auth/delete`,
+    `${BASE_URL}/auth/delete-account`,
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const res = await fetch(endpoint, { method: 'DELETE', headers });
+      const text = await res.text();
+
+      try {
+        const data = JSON.parse(text);
+        if (res.ok) return data;
+        if (res.status !== 404) return data;
+      } catch {
+        if (res.ok) {
+          return { success: true, message: 'Account deleted successfully.' };
+        }
+        if (res.status !== 404) {
+          return { error: true, message: 'Unable to delete account. Please try again later.' };
+        }
+      }
+    } catch (error) {
+      console.error('Delete account error:', error);
+    }
+  }
+
+  return { error: true, message: 'Unable to delete account. Please contact support.' };
+};
+
 // 📦 Packages
 export const getPackages = () => apiCall(`${BASE_URL}/subscriptions/active-packages`);
 

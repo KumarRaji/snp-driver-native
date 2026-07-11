@@ -1,11 +1,11 @@
 // src/components/AppHeader.tsx
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Image, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getProfile, handleLogoutIfRequired } from '../api/driverApi';
+import { deleteAccount, getProfile, handleLogoutIfRequired } from '../api/driverApi';
 
 const AppHeader = () => {
   const navigation = useNavigation<any>();
@@ -27,6 +27,47 @@ const AppHeader = () => {
     await AsyncStorage.removeItem('auth-token');
     await AsyncStorage.removeItem('profile');
     navigation.replace('Login');
+  };
+
+  const handleDeleteAccount = async () => {
+    setShowMenu(false);
+
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const data = await deleteAccount();
+
+              if (data?.logout) {
+                await AsyncStorage.removeItem('auth-token');
+                await AsyncStorage.removeItem('profile');
+                navigation.replace('Login');
+                return;
+              }
+
+              if (data?.error) {
+                Alert.alert('Delete Account', data.message || 'Unable to delete account. Please try again later.');
+                return;
+              }
+
+              await AsyncStorage.removeItem('auth-token');
+              await AsyncStorage.removeItem('profile');
+              Alert.alert('Account Deleted', 'Your account has been deleted successfully.');
+              navigation.replace('Login');
+            } catch (error) {
+              console.error('Delete account request failed:', error);
+              Alert.alert('Delete Account', 'Unable to delete account. Please try again later.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const loadLocalProfile = async () => {
@@ -137,6 +178,10 @@ const AppHeader = () => {
                 >
                   Profile
                 </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.dropdownItem} onPress={handleDeleteAccount}>
+                <Text style={[styles.dropdownText, { color: '#dc2626' }]}>Delete Account</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.dropdownItem} onPress={() => { setShowMenu(false); handleLogout(); }}>
