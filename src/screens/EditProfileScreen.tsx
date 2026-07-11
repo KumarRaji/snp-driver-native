@@ -7,7 +7,6 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -18,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
 import AppHeader from '../components/AppHeader';
+import CustomAlert from '../components/CustomAlert';
 
 const BASE_URL = 'https://drivemate.api.luisant.cloud/api';
 
@@ -45,6 +45,10 @@ const EditProfileScreen = () => {
   });
 
   const [images, setImages] = useState<any>({});
+  const [alertInfo, setAlertInfo] = useState({ visible: false, title: '', message: '', type: 'info' as const });
+
+  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => setAlertInfo({ visible: true, title, message, type });
+  const hideAlert = () => setAlertInfo({ ...alertInfo, visible: false });
 
   const handleChange = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -123,15 +127,15 @@ const EditProfileScreen = () => {
       });
 
       if (res.ok) {
-        Alert.alert('Success', 'Profile updated successfully!');
-        navigation.goBack();
+        showAlert('Success', 'Profile updated successfully!', 'success');
+        setTimeout(() => { hideAlert(); navigation.goBack(); }, 1500);
       } else {
         const data = await res.json();
-        Alert.alert('Error', data.message || data.error || 'Failed to update profile');
+        showAlert('Error', data.message || data.error || 'Failed to update profile', 'error');
       }
     } catch (error) {
       console.error('Error saving profile:', error);
-      Alert.alert('Error', 'Network error occurred while saving.');
+      showAlert('Error', 'Network error occurred while saving.', 'error');
     } finally {
       setLoading(false);
     }
@@ -230,6 +234,14 @@ const EditProfileScreen = () => {
           </TouchableOpacity>
         </View>
       </View>
+
+      <CustomAlert
+        visible={alertInfo.visible}
+        title={alertInfo.title}
+        message={alertInfo.message}
+        type={alertInfo.type}
+        onClose={hideAlert}
+      />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

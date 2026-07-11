@@ -15,6 +15,7 @@ import { getTrips, handleLogoutIfRequired, completeTripAPI, sendStartOTP, startT
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import CustomAlert from '../components/CustomAlert';
 import TripTimer from '../components/TripTimer';
 
 const HomeScreen = () => {
@@ -39,11 +40,10 @@ const HomeScreen = () => {
   const [otp, setOtp] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
 
-  // Info modal (replaces Alert)
-  const [infoModal, setInfoModal] = useState({ visible: false, title: '', message: '', success: false });
-  const showInfo = (title: string, message: string, success = false) =>
-    setInfoModal({ visible: true, title, message, success });
-  const hideInfo = () => setInfoModal({ visible: false, title: '', message: '', success: false });
+  // Custom Alert
+  const [alertInfo, setAlertInfo] = useState({ visible: false, title: '', message: '', type: 'info' as const });
+  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'info' = 'info') => setAlertInfo({ visible: true, title, message, type });
+  const hideAlert = () => setAlertInfo({ ...alertInfo, visible: false });
 
   useFocusEffect(
     useCallback(() => {
@@ -76,12 +76,12 @@ const HomeScreen = () => {
         setCompleteModal(false);
         setSelectedTrip(null);
         fetchTrips();
-        showInfo('Success', 'Trip completed successfully!', true);
+        showAlert('Success', 'Trip completed successfully!', 'success');
       } else {
-        showInfo('Error', data?.error || data?.message || 'Failed to complete trip');
+        showAlert('Error', data?.error || data?.message || 'Failed to complete trip', 'error');
       }
     } catch (e) {
-      showInfo('Error', 'Network error occurred');
+      showAlert('Error', 'Network error occurred', 'error');
     } finally {
       setLoadingId(null);
     }
@@ -97,9 +97,9 @@ const HomeScreen = () => {
       setCancelModal(false);
       setSelectedTrip(null);
       fetchTrips();
-      showInfo('Submitted', 'Cancellation request submitted.', true);
+      showAlert('Submitted', 'Cancellation request submitted.', 'success');
     } catch (e) {
-      showInfo('Error', 'Network error occurred');
+      showAlert('Error', 'Network error occurred', 'error');
     } finally {
       setLoadingId(null);
     }
@@ -109,7 +109,7 @@ const HomeScreen = () => {
   const takePhoto = async (type: 'front' | 'back') => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      showInfo('Permission Required', 'Camera permission is needed to take photos.');
+      showAlert('Permission Required', 'Camera permission is needed to take photos.', 'error');
       return;
     }
     const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 });
@@ -129,10 +129,10 @@ const HomeScreen = () => {
         setStartModal(false);
         setOtpModal(true);
       } else {
-        showInfo('Error', data?.message || 'Failed to send OTP');
+        showAlert('Error', data?.message || 'Failed to send OTP', 'error');
       }
     } catch (e) {
-      showInfo('Error', 'Network error occurred');
+      showAlert('Error', 'Network error occurred', 'error');
     } finally {
       setOtpLoading(false);
     }
@@ -151,12 +151,12 @@ const HomeScreen = () => {
         setBackPhoto(null);
         setSelectedTrip(null);
         fetchTrips();
-        showInfo('Trip Started', 'Trip has been started successfully!', true);
+        showAlert('Trip Started', 'Trip has been started successfully!', 'success');
       } else {
-        showInfo('Error', data?.message || 'Invalid OTP or failed to start trip');
+        showAlert('Error', data?.message || 'Invalid OTP or failed to start trip', 'error');
       }
     } catch (e) {
-      showInfo('Error', 'Network error occurred');
+      showAlert('Error', 'Network error occurred', 'error');
     } finally {
       setOtpLoading(false);
     }
@@ -470,23 +470,13 @@ const HomeScreen = () => {
         </View>
       </Modal>
 
-      {/* ── Info / Alert Modal ── */}
-      <Modal visible={infoModal.visible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.alertContainer}>
-            <View style={[styles.alertHeader, infoModal.success && { backgroundColor: '#22c55e' }]}>
-              <Feather name={infoModal.success ? 'check-circle' : 'alert-triangle'} size={42} color="#fff" />
-            </View>
-            <View style={styles.alertBody}>
-              <Text style={styles.alertTitle}>{infoModal.title}</Text>
-              <Text style={styles.alertMessage}>{infoModal.message}</Text>
-              <TouchableOpacity style={styles.alertButton} onPress={hideInfo}>
-                <Text style={styles.alertButtonText}>Okay, Understood</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <CustomAlert
+        visible={alertInfo.visible}
+        title={alertInfo.title}
+        message={alertInfo.message}
+        type={alertInfo.type}
+        onClose={hideAlert}
+      />
 
     </View>
   );
@@ -637,12 +627,4 @@ const styles = StyleSheet.create({
   },
   resendText: { textAlign: 'center', color: '#3B82F6', fontWeight: '600', marginBottom: 10 },
 
-  // Info/Alert modal
-  alertContainer: { backgroundColor: '#fff', borderRadius: 18, overflow: 'hidden', elevation: 12 },
-  alertHeader: { backgroundColor: '#EF4444', paddingVertical: 24, alignItems: 'center' },
-  alertBody: { padding: 20, alignItems: 'center' },
-  alertTitle: { fontSize: 20, fontWeight: '700', color: '#111', marginBottom: 8 },
-  alertMessage: { fontSize: 14, color: '#666', textAlign: 'center', lineHeight: 22, marginBottom: 20 },
-  alertButton: { backgroundColor: '#000', width: '100%', borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
-  alertButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

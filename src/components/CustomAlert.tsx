@@ -6,32 +6,61 @@ type Props = {
   visible: boolean;
   title: string;
   message: string;
-  buttonText?: string;
-  onClose: () => void;
+  type?: 'success' | 'error' | 'warning' | 'info';
+  buttons?: {
+    text: string;
+    onPress: () => void;
+    style?: 'default' | 'destructive' | 'cancel';
+  }[];
+  onClose?: () => void; // For single-button alerts or modal close request
 };
 
 const CustomAlert = ({
   visible,
   title,
   message,
-  buttonText = 'Okay, Understood',
+  type = 'info',
+  buttons,
   onClose,
 }: Props) => {
+  const defaultButtons = buttons || [
+    { text: 'Okay, Understood', onPress: onClose || (() => {}), style: 'default' },
+  ];
+
+  const typeConfig = {
+    success: { icon: 'check-circle' as const, color: '#22c55e' },
+    error: { icon: 'alert-triangle' as const, color: '#FF2D3F' },
+    warning: { icon: 'alert-triangle' as const, color: '#f59e0b' },
+    info: { icon: 'info' as const, color: '#3b82f6' },
+  };
+
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.container}>
-          <View style={styles.header}>
-            <Feather name="alert-triangle" size={58} color="#fff" />
+          <View style={[styles.header, { backgroundColor: typeConfig[type].color }]}>
+            <Feather name={typeConfig[type].icon} size={58} color="#fff" />
           </View>
 
           <View style={styles.body}>
             <Text style={styles.title}>{title}</Text>
             <Text style={styles.message}>{message}</Text>
 
-            <TouchableOpacity style={styles.button} onPress={onClose}>
-              <Text style={styles.buttonText}>{buttonText}</Text>
-            </TouchableOpacity>
+            <View style={styles.buttonContainer}>
+              {defaultButtons.map((button, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.button,
+                    button.style === 'destructive' && styles.destructiveButton,
+                    button.style === 'cancel' && styles.cancelButton,
+                    defaultButtons.length > 1 && { flex: 1 },
+                  ]}
+                  onPress={button.onPress}>
+                  <Text style={[styles.buttonText, button.style === 'cancel' && styles.cancelButtonText]}>{button.text}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         </View>
       </View>
@@ -81,6 +110,11 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 18,
   },
+  buttonContainer: {
+    width: '100%',
+    flexDirection: 'row',
+    gap: 10,
+  },
   button: {
     backgroundColor: '#000',
     width: '100%',
@@ -88,9 +122,18 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     alignItems: 'center',
   },
+  destructiveButton: {
+    backgroundColor: '#dc2626',
+  },
+  cancelButton: {
+    backgroundColor: '#e5e7eb',
+  },
   buttonText: {
     color: '#fff',
     fontWeight: '700',
     fontSize: 15,
+  },
+  cancelButtonText: {
+    color: '#374151',
   },
 });
