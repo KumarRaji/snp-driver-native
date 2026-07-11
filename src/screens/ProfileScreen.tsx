@@ -66,6 +66,19 @@ const ProfileScreen = () => {
 
     return days > 0 ? days : 0;
   };
+
+  const formatExpiryDate = (dateString: string) => {
+    if (!dateString) return 'Not set';
+    try {
+      const date = new Date(dateString);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    } catch {
+      return dateString;
+    }
+  };
   
 
   return (
@@ -335,7 +348,7 @@ const ProfileScreen = () => {
                   </View>
                 )}
                 {'expiry' in doc && (
-                  <Text style={styles.expiryText}>Expiry: {doc.expiry || 'Not set'}</Text>
+                  <Text style={styles.expiryText}>Expiry: <Text style={{ color: '#dc2626' }}>{formatExpiryDate(doc.expiry)}</Text> <Text style={{ color: '#dc2626', fontSize: 10 }}>(Expiring soon)</Text></Text>
                 )}
               </View>
             ))}
