@@ -7,6 +7,7 @@ import {
   Image,
   ActivityIndicator,
   TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
@@ -25,6 +26,7 @@ const ProfileScreen = () => {
   const [subscription, setSubscription] = useState<any>(null);
   const [trips, setTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [alertInfo, setAlertInfo] = useState({ visible: false, title: '', message: '', type: 'info' as const, buttons: [] as any[] });
 
   const showAlert = (title: string, message: string, buttons: any[] = [], type: 'info' | 'success' | 'error' | 'warning' = 'info') => setAlertInfo({ visible: true, title, message, buttons, type: type as 'info' });
@@ -33,6 +35,12 @@ const ProfileScreen = () => {
   useEffect(() => {
     fetchProfile();
   }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchProfile();
+    setRefreshing(false);
+  };
 
   const fetchProfile = async () => {
     try {
@@ -81,17 +89,39 @@ const ProfileScreen = () => {
     return Math.max(0, maxDuties - dutiesCompleted);
   };
 
-  const formatExpiryDate = (dateString: string) => {
-    if (!dateString) return 'Not set';
+  const formatExpiryDate = (dateString: string | null | undefined) => {
+    if (!dateString || dateString.trim() === '') return null;
     try {
-      const date = new Date(dateString);
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = date.getFullYear();
-      return `${day}/${month}/${year}`;
+      // ISO format: YYYY-MM-DDTHH:mm:ss.sssZ
+      if (dateString.includes('T') || /^\d{4}-/.test(dateString)) {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return null;
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return { display: `${day}/${month}/${year}`, date };
+      }
+      // DD-MM-YYYY format
+      const parts = dateString.split('-');
+      if (parts.length === 3) {
+        const [dd, mm, yyyy] = parts;
+        const date = new Date(`${yyyy}-${mm}-${dd}`);
+        if (isNaN(date.getTime())) return null;
+        return { display: `${dd}/${mm}/${yyyy}`, date };
+      }
+      return null;
     } catch {
-      return dateString;
+      return null;
     }
+  };
+
+  const getExpiryStatus = (dateString: string | null | undefined) => {
+    if (!dateString || dateString.trim() === '') return { label: 'Not Set', color: '#999', warn: false };
+    const result = formatExpiryDate(dateString);
+    if (!result) return { label: 'Not Set', color: '#999', warn: false };
+    const daysLeft = Math.ceil((result.date.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    const warn = daysLeft <= 90;
+    return { label: result.display, color: warn ? '#dc2626' : '#16a34a', warn };
   };
 
   const handleDeleteAccount = async () => {
@@ -167,7 +197,10 @@ const ProfileScreen = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       <AppHeader />
-      <ScrollView style={styles.container}>
+      <ScrollView
+        style={styles.container}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         {/* HEADER */}
         <View style={styles.header}>
           <TouchableOpacity
@@ -448,9 +481,15 @@ const ProfileScreen = () => {
                     <Text style={{ color: '#999', fontSize: 12 }}>Not Uploaded</Text>
                   </View>
                 )}
-                {'expiry' in doc && (
-                  <Text style={styles.expiryText}>Expiry: <Text style={{ color: '#dc2626' }}>{formatExpiryDate(doc.expiry)}</Text> <Text style={{ color: '#dc2626', fontSize: 10 }}>(Expiring soon)</Text></Text>
-                )}
+                {'expiry' in doc && (() => {
+                  const status = getExpiryStatus(doc.expiry);
+                  return (
+                    <Text style={styles.expiryText}>
+                      Expiry: <Text style={{ color: status.color }}>{status.label}</Text>
+                      {status.warn ? <Text style={{ color: '#dc2626', fontSize: 10 }}> (Expiring soon)</Text> : null}
+                    </Text>
+                  );
+                })()}
               </View>
             ))}
           </View>

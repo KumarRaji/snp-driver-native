@@ -10,6 +10,7 @@ import {
   TextInput,
   Image,
   Linking,
+  RefreshControl,
 } from 'react-native';
 import { getTrips, handleLogoutIfRequired, completeTripAPI, sendStartOTP, startTripAPI, requestCancelAPI } from '../api/driverApi';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -21,6 +22,7 @@ import TripTimer from '../components/TripTimer';
 const HomeScreen = () => {
   const [trips, setTrips] = useState<any[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation<any>();
 
   // Complete modal
@@ -50,6 +52,12 @@ const HomeScreen = () => {
       fetchTrips();
     }, [])
   );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchTrips();
+    setRefreshing(false);
+  };
 
   const fetchTrips = async () => {
     try {
@@ -170,7 +178,11 @@ const HomeScreen = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F4F4F4' }}>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
 
         {activeTrips.length > 0 && (
           <View style={styles.titleRow}>

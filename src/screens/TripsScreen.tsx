@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { getTrips, handleLogoutIfRequired } from '../api/driverApi';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -21,6 +22,7 @@ const formatDateTime = (value: string) => {
 
 const TripsScreen = () => {
   const [trips, setTrips] = useState<any[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation<any>();
 
   useFocusEffect(
@@ -28,6 +30,12 @@ const TripsScreen = () => {
       fetchTrips();
     }, [])
   );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchTrips();
+    setRefreshing(false);
+  };
 
   const fetchTrips = async () => {
     try {
@@ -134,7 +142,11 @@ const TripsScreen = () => {
   );
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
 
       {/* 🔥 Upcoming Section */}
       <View style={styles.titleRow}>
