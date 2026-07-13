@@ -261,7 +261,12 @@ const HomeScreen = () => {
                 )}
 
                 {/* Action Buttons */}
-                {isUpcoming ? (
+                {trip.cancellationRequested ? (
+                  <View style={{ marginTop: 15, backgroundColor: '#FFF8E1', borderWidth: 1, borderColor: '#E6B800', borderRadius: 10, paddingVertical: 14, justifyContent: 'center', alignItems: 'center', flexDirection: 'row' }}>
+                    <Feather name="clock" size={18} color="#B7791F" style={{ marginRight: 8 }} />
+                    <Text style={{ color: '#B7791F', fontSize: 16, fontWeight: '700' }}>Cancellation Pending</Text>
+                  </View>
+                ) : isUpcoming ? (
                   <View style={styles.btnRow}>
                     <TouchableOpacity
                       style={styles.startButton}

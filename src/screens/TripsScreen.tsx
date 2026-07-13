@@ -4,10 +4,14 @@ import {
   Text,
   ScrollView,
   StyleSheet,
+  TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { getTrips, handleLogoutIfRequired } from '../api/driverApi';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from '../api/config';
 
 const formatDateTime = (value: string) => {
   if (!value) return '';
@@ -64,18 +68,69 @@ const TripsScreen = () => {
       case 'COMPLETED':
         return '#3498db';
       case 'CANCELLED':
+      case 'CANCELLED_BY_DRIVER':
+      case 'CANCELLED_BY_CUSTOMER':
         return '#e74c3c';
       default:
         return '#999';
     }
   };
 
+  const handleCancelTrip = async (tripId: string) => {
+    Alert.alert(
+      'Cancel Trip',
+      'Are you sure you want to request cancellation?\n\nIf approved by the Admin, 1 duty will be deducted from your package.',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes',
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem('auth-token');
+              const response = await fetch(`${API_BASE_URL}/api/trips/${tripId}/request-cancel`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+              const data = await response.json();
+              if (response.ok) {
+                Alert.alert('Success', 'Cancellation request submitted successfully.');
+                fetchTrips();
+              } else {
+                Alert.alert('Error', data.error || 'Failed to request cancellation.');
+              }
+            } catch (e) {
+              Alert.alert('Error', 'Network Error');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const getCancelledLabel = (trip: any) => {
+    const reason = trip.cancellationReason?.toLowerCase() || '';
+    if (reason.includes('driver')) return 'Cancelled by Driver';
+    if (reason.includes('customer')) return 'Cancelled by Customer';
+    return 'Cancelled';
+  };
+
   const upcomingTrips = trips.filter(
-    (t) => t.status === 'CONFIRMED' || t.status === 'ONGOING'
+    (t) => (t.status === 'CONFIRMED' || t.status === 'ONGOING') && !t.cancellationRequested
   );
 
   const completedTrips = trips.filter(
     (t) => t.status === 'COMPLETED'
+  );
+
+  const cancellationPendingTrips = trips.filter(
+    (t) => t.cancellationRequested === true && t.status !== 'CANCELLED'
+  );
+
+  const cancelledTrips = trips.filter(
+    (t) => t.status === 'CANCELLED' || t.status === 'CANCELLED_BY_DRIVER' || t.status === 'CANCELLED_BY_CUSTOMER'
   );
 
   return (
@@ -100,8 +155,8 @@ const TripsScreen = () => {
                   {trip.serviceType || trip.tripType || trip.packageType || '-'}
                 </Text>
               </View>
-              <Text style={[styles.status, { color: getStatusColor(trip.status) }]}>
-                {trip.status}
+              <Text style={[styles.status, { color: trip.cancellationRequested ? '#d97706' : getStatusColor(trip.status) }]}>
+                {trip.cancellationRequested ? 'CANCELLATION PENDING' : trip.status}
               </Text>
             </View>
 
@@ -127,6 +182,16 @@ const TripsScreen = () => {
 
             <Text style={[styles.label, { marginTop: 10 }]}>EST. EARNINGS</Text>
             <Text style={styles.earnings}>₹{trip.estimateAmount || 0}</Text>
+
+            {trip.status === 'CONFIRMED' && !trip.cancellationRequested && (
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => handleCancelTrip(trip.id)}
+              >
+                <Feather name="x" size={16} color="#ef4444" />
+                <Text style={styles.cancelButtonText}>Cancel Trip</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ))
       )}
@@ -204,6 +269,94 @@ const TripsScreen = () => {
               </View>
             </View>
 
+          </View>
+        ))
+      )}
+
+      {/* 🔥 Cancellation Pending Section */}
+      <Text style={[styles.header, { marginTop: 20, marginBottom: 15 }]}>Cancellation Pending</Text>
+
+      {cancellationPendingTrips.length === 0 ? (
+        <Text style={styles.emptySmall}>No pending cancellations.</Text>
+      ) : (
+        cancellationPendingTrips.map((trip) => (
+          <View key={trip.id} style={styles.card}>
+            <View style={styles.topRow}>
+              <View style={styles.tripTypeBadge}>
+                <Text style={styles.tripTypeText}>
+                  {trip.serviceType || trip.tripType || '-'}
+                </Text>
+              </View>
+              <View style={styles.pendingBadge}>
+                <Text style={styles.pendingText}>Cancellation Pending</Text>
+              </View>
+            </View>
+
+            <View style={styles.timelineRow}>
+              <View style={styles.timelineLeft}>
+                <View style={styles.outerDot}><View style={styles.innerDot} /></View>
+                <View style={styles.line} />
+                <Feather name="map-pin" size={14} color="#000" />
+              </View>
+              <View style={styles.timelineRight}>
+                <Text style={styles.label}>PICKUP</Text>
+                <Text style={styles.location}>{trip.pickupLocation}</Text>
+                <Text style={[styles.label, { marginTop: 10 }]}>DROP</Text>
+                <Text style={styles.location}>{trip.dropLocation}</Text>
+              </View>
+            </View>
+
+            <Text style={[styles.label, { marginTop: 10 }]}>DATE & TIME</Text>
+            <Text style={styles.value}>
+              {trip.startDate || 'N/A'} at {trip.startTime || 'N/A'}
+            </Text>
+
+            <Text style={[styles.label, { marginTop: 10 }]}>EST. AMOUNT</Text>
+            <Text style={styles.earnings}>₹{trip.estimateAmount || 0}</Text>
+          </View>
+        ))
+      )}
+
+      {/* 🔥 Cancelled Section */}
+      <Text style={[styles.header, { marginTop: 20, marginBottom: 15 }]}>Cancelled Trips</Text>
+
+      {cancelledTrips.length === 0 ? (
+        <Text style={styles.emptySmall}>No cancelled trips.</Text>
+      ) : (
+        cancelledTrips.map((trip) => (
+          <View key={trip.id} style={styles.card}>
+            <View style={styles.topRow}>
+              <View style={styles.tripTypeBadge}>
+                <Text style={styles.tripTypeText}>
+                  {trip.serviceType || trip.tripType || '-'}
+                </Text>
+              </View>
+              <View style={styles.cancelledBadge}>
+                <Text style={styles.cancelledText}>{getCancelledLabel(trip)}</Text>
+              </View>
+            </View>
+
+            <View style={styles.timelineRow}>
+              <View style={styles.timelineLeft}>
+                <View style={styles.outerDot}><View style={styles.innerDot} /></View>
+                <View style={styles.line} />
+                <Feather name="map-pin" size={14} color="#000" />
+              </View>
+              <View style={styles.timelineRight}>
+                <Text style={styles.label}>PICKUP</Text>
+                <Text style={styles.location}>{trip.pickupLocation}</Text>
+                <Text style={[styles.label, { marginTop: 10 }]}>DROP</Text>
+                <Text style={styles.location}>{trip.dropLocation}</Text>
+              </View>
+            </View>
+
+            <Text style={[styles.label, { marginTop: 10 }]}>DATE & TIME</Text>
+            <Text style={styles.value}>
+              {trip.startDate || 'N/A'} at {trip.startTime || 'N/A'}
+            </Text>
+
+            <Text style={[styles.label, { marginTop: 10 }]}>EST. AMOUNT</Text>
+            <Text style={styles.earnings}>₹{trip.estimateAmount || 0}</Text>
           </View>
         ))
       )}
@@ -343,6 +496,32 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
+  cancelledBadge: {
+    backgroundColor: '#fee2e2',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+
+  cancelledText: {
+    color: '#b91c1c',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+
+  pendingBadge: {
+    backgroundColor: '#fff7ed',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+
+  pendingText: {
+    color: '#c2410c',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+
   bottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -375,6 +554,9 @@ const styles = StyleSheet.create({
   ratingContainer: { marginTop: 4 },
   star: { color: '#FBBF24', fontSize: 16 },
   feedback: { color: '#666', fontStyle: 'italic', fontSize: 12, marginTop: 2 },
+
+  cancelButton: { marginTop: 10, borderWidth: 1, borderColor: '#EF4444', borderRadius: 8, paddingVertical: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 },
+  cancelButtonText: { color: '#EF4444', fontSize: 15, fontWeight: '700' },
 
   timelineRow: {
     flexDirection: 'row',

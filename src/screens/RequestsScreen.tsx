@@ -256,33 +256,6 @@ const RequestsScreen = () => {
                     </View>
                   </View>
 
-                  {/* Customer */}
-                  <View style={styles.userRow}>
-                    {/* Left side (Avatar + Info) */}
-                    <View style={styles.userInfo}>
-                      <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>
-                          {req.booking?.customer?.name?.charAt(0)?.toUpperCase() || 'C'}
-                        </Text>
-                      </View>
-
-                      <View>
-                        <Text style={styles.name}>{req.booking?.customer?.name || 'Customer'}</Text>
-                        <Text style={styles.phone}>{req.booking?.customer?.phone || ''}</Text>
-                      </View>
-                    </View>
-
-                    {/* 🔥 Right side Phone Icon */}
-                    {req.booking?.customer?.phone ? (
-                      <TouchableOpacity
-                        style={styles.callButton}
-                        onPress={() => handleCall(req.booking?.customer?.phone)}
-                      >
-                        <Feather name="phone" size={18} color="#fff" />
-                      </TouchableOpacity>
-                    ) : null}
-                  </View>
-
                   {/* Buttons */}
                   <View style={styles.btnRow}>
                     <TouchableOpacity
