@@ -42,7 +42,7 @@ const HomeScreen = () => {
 
   // Custom Alert
   const [alertInfo, setAlertInfo] = useState({ visible: false, title: '', message: '', type: 'info' as const });
-  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'info' = 'info') => setAlertInfo({ visible: true, title, message, type });
+  const showAlert = (title: string, message: string, type: 'info' | 'success' | 'error' = 'info') => setAlertInfo({ visible: true, title, message, type: type as 'info' });
   const hideAlert = () => setAlertInfo({ ...alertInfo, visible: false });
 
   useFocusEffect(

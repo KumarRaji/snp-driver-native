@@ -47,7 +47,7 @@ const EditProfileScreen = () => {
   const [images, setImages] = useState<any>({});
   const [alertInfo, setAlertInfo] = useState({ visible: false, title: '', message: '', type: 'info' as const });
 
-  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => setAlertInfo({ visible: true, title, message, type });
+  const showAlert = (title: string, message: string, type: 'info' | 'success' | 'error' | 'warning' = 'info') => setAlertInfo({ visible: true, title, message, type: type as 'info' });
   const hideAlert = () => setAlertInfo({ ...alertInfo, visible: false });
 
   const handleChange = (key: string, value: string) => {

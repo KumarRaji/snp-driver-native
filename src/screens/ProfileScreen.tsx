@@ -14,7 +14,8 @@ import { Feather } from '@expo/vector-icons';
 import AppHeader from '../components/AppHeader';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { getProfile, getActiveSubscription, handleLogoutIfRequired, getTrips } from '../api/driverApi';
+import { getProfile, getActiveSubscription, handleLogoutIfRequired, getTrips, deleteAccount } from '../api/driverApi';
+import CustomAlert from '../components/CustomAlert';
 
 const BASE_URL = 'https://drivemate.api.luisant.cloud/api';
 
@@ -24,6 +25,10 @@ const ProfileScreen = () => {
   const [subscription, setSubscription] = useState<any>(null);
   const [trips, setTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [alertInfo, setAlertInfo] = useState({ visible: false, title: '', message: '', type: 'info' as const, buttons: [] as any[] });
+
+  const showAlert = (title: string, message: string, buttons: any[] = [], type: 'info' | 'success' | 'error' | 'warning' = 'info') => setAlertInfo({ visible: true, title, message, buttons, type: type as 'info' });
+  const hideAlert = () => setAlertInfo({ ...alertInfo, visible: false });
 
   useEffect(() => {
     fetchProfile();
@@ -67,6 +72,15 @@ const ProfileScreen = () => {
     return days > 0 ? days : 0;
   };
 
+  const getDutiesLeft = () => {
+    if (!subscription) return null;
+
+    const maxDuties = subscription.plan?.maxDuties || subscription.maxDuties || 0;
+    const dutiesCompleted = subscription.dutiesCompleted || 0;
+
+    return Math.max(0, maxDuties - dutiesCompleted);
+  };
+
   const formatExpiryDate = (dateString: string) => {
     if (!dateString) return 'Not set';
     try {
@@ -78,6 +92,75 @@ const ProfileScreen = () => {
     } catch {
       return dateString;
     }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      const data = await deleteAccount();
+
+      if (data?.logout) {
+        await AsyncStorage.multiRemove(['auth-token', 'profile']);
+        navigation.replace('Login');
+        return;
+      }
+
+      if (data?.error) {
+        showAlert(
+          'Delete Account Failed', 
+          data.message || 'Unable to delete account. Please try again later.',
+          undefined,
+          'error'
+        );
+        return;
+      }
+
+      await AsyncStorage.multiRemove(['auth-token', 'profile']);
+      showAlert(
+        'Account Deleted', 
+        'Your account has been deleted successfully.',
+        [
+          { 
+            text: 'Okay', 
+            onPress: () => {
+              hideAlert();
+              navigation.replace('Login');
+            }
+          }
+        ],
+        'success'
+      );
+    } catch (error) {
+      console.error('Delete account request failed:', error);
+      showAlert(
+        'Error', 
+        'Unable to delete account. Please try again later.',
+        undefined,
+        'error'
+      );
+    }
+  };
+
+  const confirmDeleteAccount = () => {
+    showAlert(
+      'Delete Account',
+      'Are you sure you want to permanently delete your account? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: hideAlert,
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            hideAlert();
+            await handleDeleteAccount();
+          },
+        },
+      ],
+      'warning'
+    );
   };
   
 
@@ -245,10 +328,28 @@ const ProfileScreen = () => {
                 {subscription.plan.name}
               </Text>
 
-              {/* 🔥 DAYS LEFT BADGE */}
+              {/* 🔥 DAYS LEFT & DUTIES LEFT BADGES */}
               {getDaysLeft() !== null && (
-                <View style={[styles.daysBadge, { alignSelf: 'flex-start', marginTop: 10 }]}>
-                  <Text style={styles.daysText}>{getDaysLeft()} days left</Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    marginTop: 10,
+                    alignItems: 'center',
+                  }}
+                >
+                  <View style={styles.daysBadge}>
+                    <Text style={styles.daysText}>
+                      {getDaysLeft()} days left
+                    </Text>
+                  </View>
+
+                  {getDutiesLeft() !== null && (
+                    <View style={styles.dutiesBadge}>
+                      <Text style={styles.dutiesText}>
+                        {getDutiesLeft()} duties left
+                      </Text>
+                    </View>
+                  )}
                 </View>
               )}
             </>
@@ -355,7 +456,25 @@ const ProfileScreen = () => {
           </View>
           <Text style={styles.uploadNote}>Note: Document uploaded successfully. Admin will verify it shortly.</Text>
         </View>
+
+        {/* Delete Account Button at Bottom */}
+        <View style={styles.bottomContainer}>
+          <TouchableOpacity 
+            style={styles.bottomDeleteBtn}
+            onPress={confirmDeleteAccount}
+          >
+            <Text style={styles.bottomDeleteText}>Delete Account</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
+
+      <CustomAlert
+        visible={alertInfo.visible}
+        title={alertInfo.title}
+        message={alertInfo.message}
+        type={alertInfo.type}
+        buttons={alertInfo.buttons}
+      />
     </SafeAreaView>
   );
 };
@@ -436,6 +555,31 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
+
+  bottomContainer: {
+    marginTop: 20,
+    marginBottom: 30,
+    paddingHorizontal: 10,
+  },
+
+  bottomDeleteBtn: {
+    backgroundColor: '#dc2626',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    minWidth: 120,
+  },
+
+  bottomDeleteText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+
+
 
   card: {
     backgroundColor: '#fff',
@@ -567,6 +711,20 @@ const styles = StyleSheet.create({
     color: '#065f46',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+
+  dutiesBadge: {
+    backgroundColor: '#F3E8FF',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginLeft: 8,
+  },
+
+  dutiesText: {
+    color: '#A855F7',
+    fontWeight: '700',
+    fontSize: 13,
   },
 
   statsContainer: {

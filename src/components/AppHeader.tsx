@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { deleteAccount, getProfile, handleLogoutIfRequired } from '../api/driverApi';
+import { getProfile, handleLogoutIfRequired } from '../api/driverApi';
 import CustomAlert from './CustomAlert';
 
 const AppHeader = () => {
@@ -18,7 +18,7 @@ const AppHeader = () => {
   const [showMenu, setShowMenu] = useState(false);
   const [alertInfo, setAlertInfo] = useState({ visible: false, title: '', message: '', type: 'info' as const, buttons: [] as any[] });
 
-  const showAlert = (title: string, message: string, buttons?: any[], type: 'success' | 'error' | 'warning' | 'info' = 'info') => setAlertInfo({ visible: true, title, message, buttons, type });
+  const showAlert = (title: string, message: string, buttons: any[] = [], type: 'info' | 'success' | 'error' | 'warning' = 'info') => setAlertInfo({ visible: true, title, message, buttons, type: type as 'info' });
   const hideAlert = () => setAlertInfo({ ...alertInfo, visible: false });
 
   useFocusEffect(
@@ -49,48 +49,7 @@ const AppHeader = () => {
     );
   };
 
-  const handleDeleteAccount = async () => {
-    setShowMenu(false); // Close the dropdown menu
-    showAlert('Delete Account', 'Are you sure you want to permanently delete your account? This action cannot be undone.', [
-      {
-        text: 'Cancel',
-        style: 'cancel',
-        onPress: hideAlert,
-      },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          hideAlert();
-          try {
-            const data = await deleteAccount();
 
-            if (data?.logout) {
-              await AsyncStorage.multiRemove(['auth-token', 'profile']);
-              navigation.replace('Login');
-              return;
-            }
-
-            if (data?.error) {
-              showAlert('Delete Account Failed', data.message || 'Unable to delete account. Please try again later.', undefined, 'error');
-              return;
-            }
-
-            await AsyncStorage.multiRemove(['auth-token', 'profile']);
-            showAlert('Account Deleted', 'Your account has been deleted successfully.', [
-              { text: 'Okay', onPress: () => {
-                hideAlert();
-                navigation.replace('Login');
-              }}
-            ], 'success');
-          } catch (error) {
-            console.error('Delete account request failed:', error);
-            showAlert('Error', 'Unable to delete account. Please try again later.', undefined, 'error');
-          }
-        },
-      },
-    ], 'warning');
-  };
 
   const loadLocalProfile = async () => {
     const stored = await AsyncStorage.getItem('profile');
@@ -200,10 +159,6 @@ const AppHeader = () => {
                 >
                   Profile
                 </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.dropdownItem} onPress={handleDeleteAccount}>
-                <Text style={[styles.dropdownText, { color: '#dc2626' }]}>Delete Account</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.dropdownItem} onPress={handleLogout}>
