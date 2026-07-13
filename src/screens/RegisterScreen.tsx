@@ -48,6 +48,7 @@ const RegisterScreen = () => {
         policeVerificationExpiryDate: '',
     });
 
+    const [otpVerified, setOtpVerified] = useState(false);
     const [images, setImages] = useState<any>({});
     const [uploadedUrls, setUploadedUrls] = useState<any>({});
     const [showLicensePicker, setShowLicensePicker] = useState(false);
@@ -139,6 +140,36 @@ const RegisterScreen = () => {
         return data.fileId || data.url || data.file?.url || '';
     };
 
+    const sendOTP = async (): Promise<boolean> => {
+        try {
+            console.log('[sendOTP] Sending OTP to:', form.phone);
+            console.log('[sendOTP] URL:', `${API_BASE_URL}/api/auth/send-otp`);
+
+            const response = await fetch(`${API_BASE_URL}/api/auth/send-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: form.phone }),
+            });
+
+            const text = await response.text();
+            console.log('[sendOTP] Status:', response.status);
+            console.log('[sendOTP] Response:', text);
+
+            const data = JSON.parse(text);
+
+            if (response.ok) {
+                return true;
+            } else {
+                showModal('Error', data.message || `Failed to send OTP (${response.status})`);
+                return false;
+            }
+        } catch (error) {
+            console.log('[sendOTP] Error:', error);
+            showModal('Error', 'Unable to send OTP');
+            return false;
+        }
+    };
+
     const handleCompleteRegistration = async () => {
         if (!form.name || !form.phone || !form.password || !form.permanentAddress) {
             showModal('Error', 'Please fill your personal details first');
@@ -148,6 +179,9 @@ const RegisterScreen = () => {
         setLoading(true);
 
         try {
+            const otpSent = await sendOTP();
+            if (!otpSent) return;
+
             const uploadedDocumentUrls = {
                 photo: await uploadFile(images.photo),
                 dlPhoto: await uploadFile(images.dlPhoto),
@@ -157,7 +191,6 @@ const RegisterScreen = () => {
             };
 
             setUploadedUrls(uploadedDocumentUrls);
-            showModal('Success', 'Documents uploaded. Please verify your OTP to finish registration.', 'success');
             setStep(4);
         } catch (error) {
             console.error('Upload Error:', error);
@@ -167,51 +200,70 @@ const RegisterScreen = () => {
         }
     };
 
-    const driverRegister = async () => {
+    const verifyOTP = async () => {
+        try {
+            console.log('[verifyOTP] Verifying OTP for:', form.phone, '| OTP:', form.otp);
+            console.log('[verifyOTP] URL:', `${API_BASE_URL}/api/auth/verify-otp-only`);
+
+            const response = await fetch(`${API_BASE_URL}/api/auth/verify-otp-only`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: form.phone, otp: form.otp }),
+            });
+
+            const text = await response.text();
+            console.log('[verifyOTP] Status:', response.status);
+            console.log('[verifyOTP] Response:', text);
+
+            const data = JSON.parse(text);
+
+            if (response.ok) {
+                setOtpVerified(true);
+                await driverRegister(uploadedUrls);
+            } else {
+                showModal('Error', data.message || `Invalid OTP (${response.status})`);
+            }
+        } catch (error) {
+            console.log('[verifyOTP] Error:', error);
+            showModal('Error', 'OTP Verification Failed');
+        }
+    };
+
+    const driverRegister = async (urls: any) => {
         if (!form.name || !form.phone || !form.password || !form.aadharNo || !form.licenseNo || !form.licenseExpiryDate) {
             showModal('Error', 'Please complete the identification details');
-            return;
-        }
-
-        if (!form.otp) {
-            showModal('Error', 'Please enter the OTP');
             return;
         }
 
         setLoading(true);
 
         try {
+            const registerPayload = {
+                name: form.name,
+                email: form.email,
+                phone: form.phone,
+                password: form.password,
+                currentAddress: form.currentAddress,
+                permanentAddress: form.permanentAddress,
+                aadharNo: form.aadharNo,
+                licenseNo: form.licenseNo,
+                licenseExpiryDate: form.licenseExpiryDate,
+                altPhone: [form.alternateMobile1, form.alternateMobile2, form.alternateMobile3, form.alternateMobile4].filter(Boolean),
+                upiId: form.gpayNo,
+                photo: urls.photo || '',
+                dlPhoto: urls.dlPhoto || '',
+                panPhoto: urls.panPhoto || '',
+                aadharPhoto: urls.aadharPhoto || '',
+                policeVerificationPhoto: urls.policeVerificationPhoto || '',
+                policeVerificationExpiryDate: form.policeVerificationExpiryDate,
+            };
+            console.log('[driverRegister] URL:', `${API_BASE_URL}/api/driver/auth/register`);
+            console.log('[driverRegister] Payload:', JSON.stringify(registerPayload, null, 2));
+
             const response = await fetch(`${API_BASE_URL}/api/driver/auth/register`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    accept: 'application/json',
-                },
-                body: JSON.stringify({
-                    name: form.name,
-                    email: form.email,
-                    phone: form.phone,
-                    password: form.password,
-                    currentAddress: form.currentAddress,
-                    permanentAddress: form.permanentAddress,
-                    aadharNo: form.aadharNo,
-                    licenseNo: form.licenseNo,
-                    licenseExpiryDate: form.licenseExpiryDate,
-                    altPhone: [
-                        form.alternateMobile1,
-                        form.alternateMobile2,
-                        form.alternateMobile3,
-                        form.alternateMobile4,
-                    ].filter(Boolean),
-                    upiId: form.gpayNo,
-                    photo: uploadedUrls.photo || '',
-                    dlPhoto: uploadedUrls.dlPhoto || '',
-                    panPhoto: uploadedUrls.panPhoto || '',
-                    aadharPhoto: uploadedUrls.aadharPhoto || '',
-                    policeVerificationPhoto: uploadedUrls.policeVerificationPhoto || '',
-                    policeVerificationExpiryDate: form.policeVerificationExpiryDate,
-                    otp: form.otp,
-                }),
+                headers: { 'Content-Type': 'application/json', accept: 'application/json' },
+                body: JSON.stringify(registerPayload),
             });
 
             const text = await response.text();
@@ -220,15 +272,17 @@ const RegisterScreen = () => {
             try {
                 data = JSON.parse(text);
             } catch {
-                console.error('Register API Non-JSON response:', text);
+                console.error('[driverRegister] Non-JSON response:', text);
                 throw new Error('Server not responding. Please try again later.');
             }
+
+            console.log('[driverRegister] Status:', response.status);
+            console.log('[driverRegister] Response:', JSON.stringify(data, null, 2));
 
             if (response.ok) {
                 if (data.token) {
                     await AsyncStorage.setItem('auth-token', data.token);
                 }
-
                 showModal('Success', 'Registration successful', 'success');
                 setTimeout(() => navigation.replace('Login'), 1500);
             } else {
@@ -473,7 +527,7 @@ const RegisterScreen = () => {
             return;
         }
 
-        driverRegister();
+        verifyOTP();
     };
 
     return (
@@ -588,6 +642,7 @@ const RegisterScreen = () => {
                 message={alertInfo.message}
                 type={alertInfo.type}
                 buttons={alertInfo.buttons}
+                onClose={hideAlert}
             />
         </KeyboardAvoidingView>
     );
@@ -730,7 +785,9 @@ const styles = StyleSheet.create({
     },
     label: {
         fontSize: 11,
-        color: '#888',        
+        color: '#888',
+        marginTop: 8,
+        marginBottom: 2,
         fontWeight: 'bold',
         textTransform: 'uppercase',
     },

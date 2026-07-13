@@ -12,7 +12,7 @@ type Props = {
     onPress: () => void;
     style?: 'default' | 'destructive' | 'cancel';
   }[];
-  onClose?: () => void; // For single-button alerts or modal close request
+  onClose?: () => void;
 };
 
 const CustomAlert = ({
@@ -23,7 +23,7 @@ const CustomAlert = ({
   buttons,
   onClose,
 }: Props) => {
-  const defaultButtons = buttons || [
+  const defaultButtons = buttons && buttons.length > 0 ? buttons : [
     { text: 'Okay, Understood', onPress: onClose || (() => {}), style: 'default' },
   ];
 
