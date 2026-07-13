@@ -5,19 +5,30 @@ const BASE_URL = 'https://drivemate.api.luisant.cloud/api';
 let isLoggingOut = false;
 
 const getHeaders = async () => {
-  const token = await AsyncStorage.getItem('auth-token');
-  if (!token) return null;
+  try {
+    const token = await AsyncStorage.getItem('auth-token');
+    if (!token) return null;
 
-  return {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  };
+    return {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    };
+  } catch (error) {
+    console.error('Error reading auth token:', error);
+    return null;
+  }
 };
 
 // 🔥 GLOBAL API CALL WRAPPER (Handles Deactivation & Errors)
 export const apiCall = async (url: string, options: any = {}) => {
   const headers = await getHeaders();
-  if (!headers) return { logout: true };
+  if (!headers) {
+    console.warn('No auth headers available for API call to:', url);
+    return {
+      error: true,
+      message: 'Authentication token not available.',
+    };
+  }
 
   try {
     const res = await fetch(url, { ...options, headers });
@@ -27,11 +38,6 @@ export const apiCall = async (url: string, options: any = {}) => {
       const data = JSON.parse(text);
 
       // Detect deactivated or unauthorized states
-      const isTokenError =
-        data?.error === 'Access token required' ||
-        data?.error === 'Invalid token' ||
-        (typeof data?.message === 'string' && data.message.toLowerCase().includes('invalid token'));
-
       const isDeactivated =
         data?.status === 'INACTIVE' ||
         (typeof data?.message === 'string' && data.message.toLowerCase().includes('deactivated'));
@@ -40,45 +46,78 @@ export const apiCall = async (url: string, options: any = {}) => {
         return { logout: true, message: 'Your account has been deactivated by admin. Please contact support.' };
       }
 
+      // Only logout on specific, known token errors
+      const isTokenError =
+        data?.error === 'Access token required' ||
+        data?.error === 'Invalid token' ||
+        data?.error === 'Token expired' ||
+        (typeof data?.message === 'string' && (
+          data.message.toLowerCase().includes('invalid token') ||
+          data.message.toLowerCase().includes('access token') ||
+          data.message.toLowerCase().includes('token expired') ||
+          data.message.toLowerCase().includes('jwt expired') ||
+          data.message.toLowerCase().includes('unauthorized') ||
+          data.message.toLowerCase().includes('authentication failed')
+        ));
+
+      // Only logout if we have a clear token error AND 401/403
       if (isTokenError && (res.status === 401 || res.status === 403)) {
         return { logout: true, message: data?.message || 'Your session expired. Please login again.' };
+      }
+
+      // For other 401/403 errors, return them as normal errors (not logout)
+      if (res.status === 401 || res.status === 403) {
+        return { error: true, message: data?.message || 'Authentication error. Please try again.' };
       }
 
       return data;
     } catch {
       // HTML response (server error, account blocked, or gateway issue)
-          // Do not force logout on temporary server errors (500/502/503) caused by fast tab switching
-          return { error: true, message: 'Server not responding. Please try again later.' };
+      // Do not force logout on temporary server errors (500/502/503) caused by fast tab switching
+      if (res.status === 401 || res.status === 403) {
+        // If we can't parse JSON but got 401/403, it's likely a server issue
+        return { error: true, message: 'Temporary authentication issue. Please try again.' };
+      }
+      return { error: true, message: 'Server not responding. Please try again later.' };
     }
   } catch (error) {
     console.error('API Network Error:', error);
-        return { error: true, message: 'Server not responding. Please check your connection.' };
+    return { error: true, message: 'Server not responding. Please check your connection.' };
   }
 };
 
 export const handleLogoutIfRequired = async (data: any, navigation: any) => {
-  if (data?.logout) {
-    // Prevent multiple logout alerts
-    if (isLoggingOut) return true;
-    isLoggingOut = true;
+  if (!data?.logout) return false;
 
-    Alert.alert(
-      'Account Disabled',
-      data.message || 'Your account has been deactivated by admin or your session expired. Please contact support.',
-      [
-        {
-          text: 'OK',
-          onPress: async () => {
-            await AsyncStorage.removeItem('auth-token');
-            isLoggingOut = false;
-            navigation.replace('Login');
-          },
+  if (isLoggingOut) return true;
+  isLoggingOut = true;
+
+  const isDeactivated =
+    data.message?.toLowerCase().includes('deactivated') ||
+    data.message?.toLowerCase().includes('contact support');
+
+  Alert.alert(
+    isDeactivated ? 'Account Disabled' : 'Session Expired',
+    data.message || 'Your session expired. Please login again.',
+    [
+      {
+        text: 'OK',
+        onPress: async () => {
+          await AsyncStorage.removeItem('auth-token');
+          isLoggingOut = false;
+          navigation.replace('Login');
         },
-      ]
-    );
-    return true;
-  }
-  return false;
+      },
+    ],
+    {
+      cancelable: false,
+      onDismiss: () => {
+        isLoggingOut = false;
+      },
+    }
+  );
+
+  return true;
 };
 
 // 👤 Profile
