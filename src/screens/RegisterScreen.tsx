@@ -20,6 +20,7 @@ import { API_BASE_URL } from '../api/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import CustomAlert from '../components/CustomAlert';
 
 const RegisterScreen = () => {
     const navigation = useNavigation<any>();
@@ -51,11 +52,11 @@ const RegisterScreen = () => {
     const [uploadedUrls, setUploadedUrls] = useState<any>({});
     const [showLicensePicker, setShowLicensePicker] = useState(false);
     const [showPolicePicker, setShowPolicePicker] = useState(false);
-    const [modal, setModal] = useState({ visible: false, title: '', message: '', type: 'error' as 'success' | 'error' });
+    const [alertInfo, setAlertInfo] = useState({ visible: false, title: '', message: '', type: 'info' as const, buttons: [] as any[] });
 
-    const showModal = (title: string, message: string, type: 'success' | 'error' = 'error') =>
-        setModal({ visible: true, title, message, type });
-    const hideModal = () => setModal({ visible: false, title: '', message: '', type: 'error' });
+    const showAlert = (title: string, message: string, buttons: any[] = [], type: 'info' | 'success' | 'error' | 'warning' = 'info') => setAlertInfo({ visible: true, title, message, buttons, type: type as 'info' });
+    const showModal = (title: string, message: string, type: 'info' | 'success' | 'error' | 'warning' = 'error') => showAlert(title, message, [], type);
+    const hideAlert = () => setAlertInfo({ ...alertInfo, visible: false });
 
     const formatDate = (date: Date) => {
         const dd = String(date.getDate()).padStart(2, '0');
@@ -250,7 +251,11 @@ const RegisterScreen = () => {
         <View key={field}>
             <Text style={styles.label}>{label}</Text>
             <TextInput
-                style={[styles.input, options.multiline && styles.textarea]}
+                style={[
+                    options.multiline
+                        ? styles.textareaInput
+                        : styles.input,
+                ]}
                 placeholder={placeholder}
                 placeholderTextColor="#999"
                 value={(form as any)[field]}
@@ -577,26 +582,13 @@ const RegisterScreen = () => {
                 </View>
             </Modal>
 
-            <Modal visible={modal.visible} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContainer}>
-                        <View style={[styles.modalHeader, { backgroundColor: modal.type === 'success' ? '#22C55E' : '#EF4444' }]}>
-                            <Feather
-                                name={modal.type === 'success' ? 'check-circle' : 'alert-triangle'}
-                                size={58}
-                                color="#fff"
-                            />
-                        </View>
-                        <View style={styles.modalBody}>
-                            <Text style={styles.modalTitle}>{modal.title}</Text>
-                            <Text style={styles.modalMessage}>{modal.message}</Text>
-                            <TouchableOpacity style={styles.modalButton} onPress={hideModal}>
-                                <Text style={styles.modalButtonText}>Okay, Understood</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+            <CustomAlert
+                visible={alertInfo.visible}
+                title={alertInfo.title}
+                message={alertInfo.message}
+                type={alertInfo.type}
+                buttons={alertInfo.buttons}
+            />
         </KeyboardAvoidingView>
     );
 };
@@ -738,8 +730,7 @@ const styles = StyleSheet.create({
     },
     label: {
         fontSize: 11,
-        color: '#888',
-        marginTop: 14,
+        color: '#888',        
         fontWeight: 'bold',
         textTransform: 'uppercase',
     },
@@ -747,26 +738,38 @@ const styles = StyleSheet.create({
         backgroundColor: '#F8F8F8',
         borderRadius: 14,
         height: 52,
-        padding: 15,
+        paddingHorizontal: 15,
         marginTop: 6,
     },
+    textareaInput: {
+        backgroundColor: '#F8F8F8',
+        borderRadius: 14,
+        minHeight: 110,
+        paddingHorizontal: 15,
+        paddingTop: 14,
+        paddingBottom: 14,
+        marginTop: 6,
+        textAlignVertical: 'top',
+    },
     textarea: {
-        minHeight: 80,
+        minHeight: 100,
         textAlignVertical: 'top',
     },
     checkboxRow: {
         flexDirection: 'row',
         alignItems: 'center',
         marginTop: 12,
+        marginBottom: 18,
     },
     checkboxBox: {
-        width: 20,
-        height: 20,
+        width: 24,
+        height: 24,
         borderWidth: 1.5,
-        borderColor: '#6b7280',
-        borderRadius: 4,
+        borderColor: '#9CA3AF',
+        borderRadius: 6,
         justifyContent: 'center',
         alignItems: 'center',
+        marginRight: 12,
     },
     checkboxBoxChecked: {
         backgroundColor: '#111827',
@@ -774,12 +777,14 @@ const styles = StyleSheet.create({
     },
     checkboxCheck: {
         color: '#fff',
-        fontSize: 12,
-        fontWeight: 'bold',
+        fontSize: 14,
+        fontWeight: '700',
     },
     checkboxLabel: {
-        marginLeft: 8,
+        flex: 1,
+        fontSize: 14,
         color: '#374151',
+        fontWeight: '500',
     },
     helperText: {
         color: '#6b7280',

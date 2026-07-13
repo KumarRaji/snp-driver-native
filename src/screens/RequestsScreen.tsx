@@ -17,6 +17,7 @@ import {
 } from '../api/driverApi';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
+import CustomAlert from '../components/CustomAlert';
 
 const formatDateTime = (date: string) => {
   if (!date) return 'N/A';
@@ -42,7 +43,11 @@ const RequestsScreen = () => {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [activeSub, setActiveSub] = useState<any>(null);
   const [loadingSub, setLoadingSub] = useState(true);
+  const [alertInfo, setAlertInfo] = useState({ visible: false, title: '', message: '', type: 'info' as const, buttons: [] as any[] });
   const navigation = useNavigation<any>();
+
+  const showAlert = (title: string, message: string, buttons: any[] = [], type: 'info' | 'success' | 'error' | 'warning' = 'info') => setAlertInfo({ visible: true, title, message, buttons, type: type as 'info' });
+  const hideAlert = () => setAlertInfo({ ...alertInfo, visible: false });
 
   useFocusEffect(
     useCallback(() => {
@@ -96,16 +101,20 @@ const RequestsScreen = () => {
     id: string,
     action: 'ACCEPTED' | 'REJECTED'
   ) => {
-    Alert.alert(
+    showAlert(
       action === 'ACCEPTED' ? 'Accept Request?' : 'Reject Request?',
       'Are you sure?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel', onPress: hideAlert },
         {
           text: 'Yes',
-          onPress: () => performAction(id, action),
+          onPress: () => {
+            hideAlert();
+            performAction(id, action);
+          },
         },
-      ]
+      ],
+      'warning'
     );
   };
 
@@ -368,6 +377,14 @@ const RequestsScreen = () => {
           </>
         )}
       </ScrollView>
+
+      <CustomAlert
+        visible={alertInfo.visible}
+        title={alertInfo.title}
+        message={alertInfo.message}
+        type={alertInfo.type}
+        buttons={alertInfo.buttons}
+      />
     </View>
   );
 };

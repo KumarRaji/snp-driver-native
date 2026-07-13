@@ -6,10 +6,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
-  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { getPackages, purchaseSubscription, getActiveSubscription, handleLogoutIfRequired } from '../api/driverApi';
+import CustomAlert from '../components/CustomAlert';
 
 const PackagesScreen = () => {
   const [packages, setPackages] = useState<any[]>([]);
@@ -17,7 +17,11 @@ const PackagesScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activePlan, setActivePlan] = useState<any>(null);
+  const [alertInfo, setAlertInfo] = useState({ visible: false, title: '', message: '', type: 'info' as const, buttons: [] as any[] });
   const navigation = useNavigation<any>();
+
+  const showAlert = (title: string, message: string, buttons: any[] = [], type: 'info' | 'success' | 'error' | 'warning' = 'info') => setAlertInfo({ visible: true, title, message, buttons, type: type as 'info' });
+  const hideAlert = () => setAlertInfo({ ...alertInfo, visible: false });
 
   useEffect(() => {
     fetchPackages();
@@ -62,7 +66,7 @@ const PackagesScreen = () => {
       if (await handleLogoutIfRequired(res, navigation)) return;
 
       if (res?.error || res?.success === false) {
-        Alert.alert('Error', res.error || res.message || 'Payment Failed ❌');
+        showAlert('Error', res.error || res.message || 'Payment Failed ❌');
         return;
       }
 
@@ -73,15 +77,18 @@ const PackagesScreen = () => {
 
       closeModal();
 
-      Alert.alert('Success', 'Subscription Activated Successfully ✅', [
+      showAlert('Success', 'Subscription Activated Successfully ✅', [
         {
           text: 'OK',
-          onPress: () => navigation.navigate('REQUESTS'),
+          onPress: () => {
+            hideAlert();
+            navigation.navigate('REQUESTS');
+          },
         },
-      ]);
+      ], 'success');
     } catch (err) {
       console.error(err);
-      Alert.alert('Error', 'Payment Failed ❌');
+      showAlert('Error', 'Payment Failed ❌');
     } finally {
       setLoading(false);
     }
@@ -228,6 +235,14 @@ const PackagesScreen = () => {
           </View>
         </View>
       </Modal>
+
+      <CustomAlert
+        visible={alertInfo.visible}
+        title={alertInfo.title}
+        message={alertInfo.message}
+        type={alertInfo.type}
+        buttons={alertInfo.buttons}
+      />
 
     </View>
   );
