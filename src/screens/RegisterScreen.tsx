@@ -26,6 +26,7 @@ const RegisterScreen = () => {
     const navigation = useNavigation<any>();
 
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [step, setStep] = useState(1);
     const [sameAddress, setSameAddress] = useState(false);
 
@@ -301,37 +302,45 @@ const RegisterScreen = () => {
         label: string,
         placeholder = '',
         options: any = {}
-    ) => (
-        <View key={field}>
-            <Text style={styles.label}>{label}</Text>
-            <TextInput
-                style={[
-                    options.multiline
-                        ? styles.textareaInput
-                        : styles.input,
-                ]}
-                placeholder={placeholder}
-                placeholderTextColor="#999"
-                value={(form as any)[field]}
-                secureTextEntry={options.secureTextEntry || false}
-                keyboardType={options.keyboardType || 'default'}
-                autoCapitalize={options.autoCapitalize || 'none'}
-                multiline={options.multiline || false}
-                numberOfLines={options.numberOfLines || 1}
-                maxLength={options.maxLength}
-                editable={options.editable !== undefined ? options.editable : true}
-                onChangeText={(text) => {
-                    let value = text;
-
-                    if (options.numericOnly) {
-                        value = text.replace(/[^0-9]/g, '');
-                    }
-
-                    updateFormField(field, value);
-                }}
-            />
-        </View>
-    );
+    ) => {
+        const isPassword = options.secureTextEntry && field === 'password';
+        return (
+            <View key={field}>
+                <Text style={styles.label}>{label}</Text>
+                <View style={isPassword ? styles.passwordWrapper : undefined}>
+                    <TextInput
+                        style={[
+                            options.multiline
+                                ? styles.textareaInput
+                                : isPassword ? styles.passwordInput : styles.input,
+                        ]}
+                        placeholder={placeholder}
+                        placeholderTextColor="#999"
+                        value={(form as any)[field]}
+                        secureTextEntry={isPassword ? !showPassword : (options.secureTextEntry || false)}
+                        keyboardType={options.keyboardType || 'default'}
+                        autoCapitalize={options.autoCapitalize || 'none'}
+                        multiline={options.multiline || false}
+                        numberOfLines={options.numberOfLines || 1}
+                        maxLength={options.maxLength}
+                        editable={options.editable !== undefined ? options.editable : true}
+                        onChangeText={(text) => {
+                            let value = text;
+                            if (options.numericOnly) {
+                                value = text.replace(/[^0-9]/g, '');
+                            }
+                            updateFormField(field, value);
+                        }}
+                    />
+                    {isPassword && form.password.length > 0 && (
+                        <TouchableOpacity onPress={() => setShowPassword(p => !p)} style={styles.eyeButton}>
+                            <Feather name={showPassword ? 'eye' : 'eye-off'} size={20} color="#C0C0C0" />
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </View>
+        );
+    };
 
     const renderPersonalDetails = () => (
         <View>
@@ -797,6 +806,21 @@ const styles = StyleSheet.create({
         height: 52,
         paddingHorizontal: 15,
         marginTop: 6,
+    },
+    passwordWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8F8F8',
+        borderRadius: 14,
+        marginTop: 6,
+    },
+    passwordInput: {
+        flex: 1,
+        height: 52,
+        paddingHorizontal: 15,
+    },
+    eyeButton: {
+        paddingHorizontal: 14,
     },
     textareaInput: {
         backgroundColor: '#F8F8F8',

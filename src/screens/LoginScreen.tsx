@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../api/config';
 import CustomAlert from '../components/CustomAlert';
+import { Feather } from '@expo/vector-icons';
 
 const LoginScreen = () => {
     const navigation = useNavigation<any>();
@@ -21,6 +22,7 @@ const LoginScreen = () => {
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [modal, setModal] = useState({ visible: false, title: '', message: '' });
 
     const showModal = (title: string, message: string) => setModal({ visible: true, title, message });
@@ -127,14 +129,21 @@ const LoginScreen = () => {
                     />
 
                     <Text style={styles.label}>PASSWORD</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="••••••••"
-                        placeholderTextColor="#999"
-                        secureTextEntry
-                        value={password}
-                        onChangeText={setPassword}
-                    />
+                    <View style={styles.passwordWrapper}>
+                        <TextInput
+                            style={styles.passwordInput}
+                            placeholder="••••••••"
+                            placeholderTextColor="#999"
+                            secureTextEntry={!showPassword}
+                            value={password}
+                            onChangeText={setPassword}
+                        />
+                        {password.length > 0 && (
+                            <TouchableOpacity onPress={() => setShowPassword(p => !p)} style={styles.eyeButton}>
+                                <Feather name={showPassword ? 'eye' : 'eye-off'} size={20} color="#C0C0C0" />
+                            </TouchableOpacity>
+                        )}
+                    </View>
 
                     <TouchableOpacity
                         style={[styles.button, isLoginDisabled && styles.disabledButton]}
@@ -206,6 +215,20 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 15,
         marginTop: 6,
+    },
+    passwordWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f1f1f1',
+        borderRadius: 10,
+        marginTop: 6,
+    },
+    passwordInput: {
+        flex: 1,
+        padding: 15,
+    },
+    eyeButton: {
+        paddingHorizontal: 12,
     },
     button: {
         backgroundColor: '#000',
