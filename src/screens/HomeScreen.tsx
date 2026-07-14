@@ -19,6 +19,20 @@ import * as ImagePicker from 'expo-image-picker';
 import CustomAlert from '../components/CustomAlert';
 import TripTimer from '../components/TripTimer';
 
+const shouldReverifyTrip = (trip: any) => {
+  if (trip.status !== 'ONGOING') return false;
+
+  const lastActivity = trip.updatedAt || trip.actualStartTime;
+
+  if (!lastActivity) return false;
+
+  const diff = new Date().getTime() - new Date(lastActivity).getTime();
+
+  const hours = diff / (1000 * 60 * 60);
+
+  return hours >= 12;
+};
+
 const HomeScreen = () => {
   const [trips, setTrips] = useState<any[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -159,7 +173,15 @@ const HomeScreen = () => {
         setBackPhoto(null);
         setSelectedTrip(null);
         fetchTrips();
-        showAlert('Trip Started', 'Trip has been started successfully!', 'success');
+        showAlert(
+          selectedTrip?.status === 'ONGOING'
+            ? 'Ride Continued'
+            : 'Trip Started',
+          selectedTrip?.status === 'ONGOING'
+            ? 'Vehicle verification completed successfully.'
+            : 'Trip has been started successfully!',
+          'success'
+        );
       } else {
         showAlert('Error', data?.message || 'Invalid OTP or failed to start trip', 'error');
       }
@@ -200,6 +222,7 @@ const HomeScreen = () => {
         ) : (
           activeTrips.map((trip) => {
             const isUpcoming = trip.status === 'CONFIRMED' || trip.status === 'ACCEPTED';
+            const needReverify = shouldReverifyTrip(trip);
             return (
               <View key={trip.id} style={styles.card}>
 
@@ -303,6 +326,41 @@ const HomeScreen = () => {
                       <Text style={styles.cancelButtonText}>Cancel</Text>
                     </TouchableOpacity>
                   </View>
+                ) : needReverify ? (
+                  <>
+                    <View style={styles.reverifyCard}>
+                      <View style={{ flexDirection: 'row' }}>
+                        <Feather
+                          name="alert-triangle"
+                          size={24}
+                          color="#D97706"
+                        />
+
+                        <View style={{ flex: 1, marginLeft: 12 }}>
+                          <Text style={styles.reverifyTitle}>
+                            Trip exceeded 12 hours
+                          </Text>
+
+                          <Text style={styles.reverifySubtitle}>
+                            You must re-verify your vehicle photos and OTP
+                            before continuing this ride.
+                          </Text>
+                        </View>
+                      </View>
+
+                      <TouchableOpacity
+                        style={styles.reverifyButton}
+                        onPress={() => {
+                          setSelectedTrip(trip);
+                          setStartModal(true);
+                        }}
+                      >
+                        <Text style={styles.reverifyButtonText}>
+                          Re-verify & Continue Ride
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
                 ) : (
                   <TouchableOpacity
                     style={styles.completeButton}
@@ -413,8 +471,16 @@ const HomeScreen = () => {
       <Modal visible={startModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Start Trip</Text>
-            <Text style={styles.modalSub}>Take photos before starting</Text>
+            <Text style={styles.modalTitle}>
+              {selectedTrip?.status === 'ONGOING'
+                ? 'Re-verify Trip'
+                : 'Start Trip'}
+            </Text>
+            <Text style={styles.modalSub}>
+              {selectedTrip?.status === 'ONGOING'
+                ? 'Take new vehicle photos before continuing.'
+                : 'Take vehicle photos before starting.'}
+            </Text>
 
             <Text style={styles.photoLabel}>CAR FRONT VIEW</Text>
             <TouchableOpacity style={styles.photoBox} onPress={() => takePhoto('front')}>
@@ -441,7 +507,11 @@ const HomeScreen = () => {
               >
                 {otpLoading
                   ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={styles.modalConfirmText}>Send OTP</Text>}
+                  : <Text style={styles.modalConfirmText}>
+                      {selectedTrip?.status === 'ONGOING'
+                        ? 'Send Re-verification OTP'
+                        : 'Send OTP'}
+                    </Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -480,7 +550,11 @@ const HomeScreen = () => {
               >
                 {otpLoading
                   ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={styles.modalConfirmText}>Confirm Start</Text>}
+                  : <Text style={styles.modalConfirmText}>
+                      {selectedTrip?.status === 'ONGOING'
+                        ? 'Verify & Continue Ride'
+                        : 'Verify & Start'}
+                    </Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -595,11 +669,11 @@ const styles = StyleSheet.create({
   modalContent: { backgroundColor: '#fff', borderRadius: 16, padding: 20 },
   modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 5 },
   modalSub: { color: '#666', marginBottom: 16 },
-  modalBtnRow: { flexDirection: 'row', gap: 12, marginTop: 10 },
-  modalCancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: '#eee', alignItems: 'center' },
-  modalCancelText: { fontWeight: 'bold', color: '#333' },
-  modalConfirmBtn: { flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: '#22c55e', alignItems: 'center' },
-  modalConfirmText: { fontWeight: 'bold', color: '#fff' },
+  modalBtnRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
+  modalCancelBtn: { flex: 0.8, paddingVertical: 12, borderRadius: 8, backgroundColor: '#eee', alignItems: 'center', justifyContent: 'center' },
+  modalCancelText: { fontWeight: 'bold', color: '#333', textAlign: 'center' },
+  modalConfirmBtn: { flex: 1.2, paddingVertical: 16, borderRadius: 8, backgroundColor: '#22c55e', alignItems: 'center', justifyContent: 'center' },
+  modalConfirmText: { fontWeight: 'bold', color: '#fff', textAlign: 'center' },
 
   modalHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   successIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#E8F8EC', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
@@ -643,5 +717,38 @@ const styles = StyleSheet.create({
     textAlign: 'center', fontSize: 22, letterSpacing: 8, marginVertical: 14, color: '#000',
   },
   resendText: { textAlign: 'center', color: '#3B82F6', fontWeight: '600', marginBottom: 10 },
+
+  // Re-verify Card
+  reverifyCard: {
+    backgroundColor: '#FFF8E1',
+    borderRadius: 12,
+    padding: 18,
+    marginTop: 15,
+    borderWidth: 1,
+    borderColor: '#F4D06F',
+  },
+  reverifyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#92400E',
+  },
+  reverifySubtitle: {
+    marginTop: 6,
+    color: '#7C6A35',
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  reverifyButton: {
+    marginTop: 18,
+    backgroundColor: '#F4B400',
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  reverifyButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
 
 });
