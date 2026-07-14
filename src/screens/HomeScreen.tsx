@@ -88,11 +88,53 @@ const HomeScreen = () => {
   );
 
   // ── Complete Trip ──────────────────────────────────────────
+  const calculateFinalAmount = (trip: any) => {
+    const baseAmount = Number(
+      trip.estimatedCost ||
+      trip.estimateAmount ||
+      0
+    );
+
+    if (!trip.actualStartTime || !trip.duration) {
+      return baseAmount;
+    }
+
+    const start = new Date(trip.actualStartTime).getTime();
+    const end = Date.now();
+
+    const actualHours = Math.floor(
+      (end - start) / (1000 * 60 * 60)
+    );
+
+    let packageHours = 0;
+
+    const duration = trip.duration.toLowerCase();
+
+    const number = parseInt(duration.match(/\d+/)?.[0] || "0");
+
+    if (duration.includes("hour") || duration.includes("hr")) {
+      packageHours = number;
+    } else if (duration.includes("day")) {
+      packageHours = number * 12;
+    } else if (duration.includes("month")) {
+      packageHours = number * 30 * 12;
+    }
+
+    if (actualHours > packageHours) {
+      return baseAmount + ((actualHours - packageHours) * 100);
+    }
+
+    return baseAmount;
+  };
+
   const completeTrip = async () => {
     if (!selectedTrip) return;
     try {
       setLoadingId(selectedTrip.id);
-      const data = await completeTripAPI(selectedTrip.id);
+      const finalAmount = calculateFinalAmount(selectedTrip);
+      const data = await completeTripAPI(selectedTrip.id, {
+        finalAmount,
+      });
       if (await handleLogoutIfRequired(data, navigation)) return;
       if (data?.success) {
         setCompleteModal(false);
@@ -290,8 +332,39 @@ const HomeScreen = () => {
                 {/* Base Amount */}
                 {trip.estimateAmount && (
                   <View style={styles.amountCard}>
-                    <Text style={styles.amountLabel}>BASE AMOUNT</Text>
-                    <Text style={styles.amount}>₹{trip.estimateAmount}</Text>
+
+                    {/* Schedule Row */}
+                    <View style={styles.scheduleRow}>
+                      <View style={styles.scheduleLeft}>
+                        <Feather
+                          name="calendar"
+                          size={13}
+                          color="#9CA3AF"
+                        />
+
+                        <Text style={styles.scheduleLabel}>
+                          SCHEDULE
+                        </Text>
+                      </View>
+
+                      <Text style={styles.estimateText}>
+                        Estimate ({trip.duration || "0 Hrs"})
+                      </Text>
+                    </View>
+
+                    <View style={styles.scheduleDivider} />
+
+                    {/* Base Amount */}
+                    <View style={styles.amountRow}>
+                      <Text style={styles.amountLabel}>
+                        BASE AMOUNT
+                      </Text>
+
+                      <Text style={styles.amount}>
+                        ₹{trip.estimatedCost || trip.estimateAmount || 0}
+                      </Text>
+                    </View>
+
                   </View>
                 )}
 
@@ -395,8 +468,8 @@ const HomeScreen = () => {
               <>
                 <View style={styles.completAmountCard}>
                   <Text style={styles.completAmountLabel}>FINAL AMOUNT</Text>
-                  <Text style={styles.completAmountValue}>₹{selectedTrip.finalAmount || selectedTrip.estimateAmount}</Text>
-                  <Text style={styles.completAmountNote}>*Includes ₹100/hr extra charge if applicable</Text>
+                  <Text style={styles.completAmountValue}>₹{calculateFinalAmount(selectedTrip)}</Text>
+                  <Text style={styles.completAmountNote}>*Includes ₹100/hr extra charge after {selectedTrip.duration}</Text>
                 </View>
 
                 <View style={styles.modalTimelineRow}>
@@ -650,11 +723,44 @@ const styles = StyleSheet.create({
 
   // Amount
   amountCard: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    flexDirection: 'column',
     backgroundColor: '#1a1a1a', borderRadius: 10, padding: 12, marginTop: 12,
   },
   amountLabel: { color: '#888', fontSize: 11, fontWeight: '700' },
   amount: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+
+  scheduleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  scheduleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  scheduleLabel: {
+    marginLeft: 6,
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  estimateText: {
+    color: '#60A5FA',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  scheduleDivider: {
+    height: 1,
+    backgroundColor: '#374151',
+    marginBottom: 10,
+  },
+  amountRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
 
   // Buttons
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 14 },

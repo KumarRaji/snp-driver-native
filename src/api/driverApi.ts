@@ -190,8 +190,11 @@ export const respondRequest = (id: string, action: string) =>
   });
 
 // 🏁 Complete Trip
-export const completeTripAPI = (id: string) =>
-  apiCall(`${BASE_URL}/trips/${id}/complete`, { method: 'POST' });
+export const completeTripAPI = (id: string, body: any) =>
+  apiCall(`${BASE_URL}/trips/${id}/complete`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 
 // 🚀 Send Start OTP
 export const sendStartOTP = (id: string) =>
