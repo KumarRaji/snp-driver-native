@@ -29,6 +29,9 @@ const EditProfileScreen = () => {
   const profile = route.params?.profile || {};
 
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [form, setForm] = useState({
     name: profile.name || '',
     phone: profile.phone || '',
@@ -164,7 +167,7 @@ const EditProfileScreen = () => {
           { key: 'phone', label: 'Phone', type: 'phone-pad' },
           { key: 'currentAddress', label: 'Current Address', multiline: true },
           { key: 'permanentAddress', label: 'Permanent Address', multiline: true },
-          { key: 'password', label: 'Change Password', secureTextEntry: true, placeholder: 'Enter new password (leave blank to keep current)', autoCapitalize: 'none', autoCorrect: false },
+          { key: 'password', label: 'Change Password', isPassword: true, placeholder: 'Enter new password (leave blank to keep current)', autoCapitalize: 'none', autoCorrect: false },
           { key: 'aadharNo', label: 'Aadhar Number', type: 'numeric' },
           { key: 'licenseNo', label: 'License Number' },
           { key: 'alternateMobile1', label: 'Alternate Phone 1', type: 'phone-pad' },
@@ -175,19 +178,38 @@ const EditProfileScreen = () => {
         ].map((field) => (
           <View key={field.key} style={styles.inputGroup}>
             <Text style={styles.label}>{field.label}</Text>
-            <TextInput
-              style={(field as any).multiline ? [styles.input, { height: 90, textAlignVertical: 'top' }] : styles.input}
-              value={(form as any)[field.key]}
-              onChangeText={(text) => handleChange(field.key, text)}
-              keyboardType={(field.type as any) || 'default'}
-              secureTextEntry={(field as any).secureTextEntry}
-              placeholder={(field as any).placeholder}
-              placeholderTextColor={(field as any).placeholder ? '#999' : undefined}
-              autoCapitalize={(field as any).autoCapitalize}
-              autoCorrect={(field as any).autoCorrect}
-              multiline={(field as any).multiline || false}
-              numberOfLines={(field as any).multiline ? 3 : undefined}
-            />
+            {(field as any).isPassword ? (
+              <View style={styles.passwordWrapper}>
+                <TextInput
+                  style={styles.passwordInput}
+                  value={(form as any)[field.key]}
+                  onChangeText={(text) => handleChange(field.key, text)}
+                  secureTextEntry={!showPassword}
+                  placeholder={(field as any).placeholder}
+                  placeholderTextColor="#999"
+                  autoCapitalize={(field as any).autoCapitalize}
+                  autoCorrect={(field as any).autoCorrect}
+                />
+                {(form as any)[field.key].length > 0 && (
+                  <TouchableOpacity onPress={() => setShowPassword(p => !p)} style={styles.eyeButton}>
+                    <Feather name={showPassword ? 'eye' : 'eye-off'} size={20} color="#C0C0C0" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              <TextInput
+                style={(field as any).multiline ? [styles.input, { height: 90, textAlignVertical: 'top' }] : styles.input}
+                value={(form as any)[field.key]}
+                onChangeText={(text) => handleChange(field.key, text)}
+                keyboardType={(field.type as any) || 'default'}
+                placeholder={(field as any).placeholder}
+                placeholderTextColor={(field as any).placeholder ? '#999' : undefined}
+                autoCapitalize={(field as any).autoCapitalize}
+                autoCorrect={(field as any).autoCorrect}
+                multiline={(field as any).multiline || false}
+                numberOfLines={(field as any).multiline ? 3 : undefined}
+              />
+            )}
           </View>
         ))}
 
@@ -272,6 +294,21 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     fontSize: 15,
     color: '#000',
+  },
+  passwordWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 15,
+    fontSize: 15,
+    color: '#000',
+  },
+  eyeButton: {
+    paddingHorizontal: 12,
   },
   stickyFooter: {
     padding: 15,

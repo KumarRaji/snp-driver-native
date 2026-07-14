@@ -17,6 +17,7 @@ const PackagesScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activePlan, setActivePlan] = useState<any>(null);
+  const [isFetching, setIsFetching] = useState(false);
   const [alertInfo, setAlertInfo] = useState({ visible: false, title: '', message: '', type: 'info' as const, buttons: [] as any[] });
   const navigation = useNavigation<any>();
 
@@ -29,9 +30,15 @@ const PackagesScreen = () => {
   }, []);
 
   const fetchPackages = async () => {
-    const data = await getPackages();
-    if (await handleLogoutIfRequired(data, navigation)) return;
-    setPackages(data.packages || []);
+    if (isFetching) return;
+    setIsFetching(true);
+    try {
+      const data = await getPackages();
+      if (await handleLogoutIfRequired(data, navigation)) return;
+      setPackages(data.packages || []);
+    } finally {
+      setIsFetching(false);
+    }
   };
 
   const fetchActivePlan = async () => {

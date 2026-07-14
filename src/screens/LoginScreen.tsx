@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../api/config';
 import CustomAlert from '../components/CustomAlert';
 import { Feather } from '@expo/vector-icons';
+import { resetLogoutFlag } from '../api/driverApi';
 
 const LoginScreen = () => {
     const navigation = useNavigation<any>();
@@ -65,16 +66,26 @@ const LoginScreen = () => {
             }
 
             if (response.ok) {
-                // Save token
+                // Save token and wait for it to complete
                 if (data.token) {
                     try {
                         await AsyncStorage.setItem('auth-token', data.token);
+                        console.log('Token saved successfully');
                     } catch (storageError) {
-                        console.error("ASYNC STORAGE ERROR:", storageError);
+                        console.error('ASYNC STORAGE ERROR:', storageError);
+                        showModal('Error', 'Failed to save authentication token.');
+                        setLoading(false);
+                        return;
                     }
+                } else {
+                    console.error('No token in login response');
+                    showModal('Error', 'Invalid server response. Please try again.');
+                    setLoading(false);
+                    return;
                 }
 
-                // Navigate
+                // Navigate only after token is saved
+                resetLogoutFlag();
                 navigation.replace('DriverTabs');
             } else {
                 let errorMessage = data.message || data.error || 'Invalid credentials';

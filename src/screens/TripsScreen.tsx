@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   RefreshControl,
 } from 'react-native';
 import { getTrips, handleLogoutIfRequired } from '../api/driverApi';
@@ -13,6 +12,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../api/config';
+import CustomAlert from '../components/CustomAlert';
 
 const formatDateTime = (value: string) => {
   if (!value) return '';
@@ -23,7 +23,17 @@ const formatDateTime = (value: string) => {
 const TripsScreen = () => {
   const [trips, setTrips] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
+  const [modal, setModal] = useState({ visible: false, title: '', message: '', type: 'info' as 'success' | 'error' | 'warning' | 'info', buttons: [] as any[] });
   const navigation = useNavigation<any>();
+
+  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info', buttons: any[] = []) => {
+    setModal({ visible: true, title, message, type, buttons });
+  };
+
+  const hideAlert = () => {
+    setModal({ visible: false, title: '', message: '', type: 'info', buttons: [] });
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -38,6 +48,8 @@ const TripsScreen = () => {
   };
 
   const fetchTrips = async () => {
+    if (isFetching) return;
+    setIsFetching(true);
     try {
       const data = await getTrips();
 
@@ -47,7 +59,7 @@ const TripsScreen = () => {
         const getPriority = (status: string) => {
           if (status === 'CONFIRMED') return 1;
           if (status === 'COMPLETED') return 3;
-          return 2; // Other statuses in the middle
+          return 2;
         };
 
         const priorityDiff = getPriority(a.status) - getPriority(b.status);
@@ -55,7 +67,6 @@ const TripsScreen = () => {
           return priorityDiff;
         }
 
-        // If same status, sort by date & time (newest top, oldest bottom)
         const timeA = new Date(`${a.startDate || '1970-01-01'}T${a.startTime || '00:00'}:00`).getTime();
         const timeB = new Date(`${b.startDate || '1970-01-01'}T${b.startTime || '00:00'}:00`).getTime();
 
@@ -66,6 +77,8 @@ const TripsScreen = () => {
     } catch (error) {
       console.error('Error fetching trips:', error);
       setTrips([]);
+    } finally {
+      setIsFetching(false);
     }
   };
 
@@ -87,14 +100,16 @@ const TripsScreen = () => {
   };
 
   const handleCancelTrip = async (tripId: string) => {
-    Alert.alert(
+    showAlert(
       'Cancel Trip',
       'Are you sure you want to request cancellation?\n\nIf approved by the Admin, 1 duty will be deducted from your package.',
+      'warning',
       [
-        { text: 'No', style: 'cancel' },
+        { text: 'No', onPress: hideAlert, style: 'cancel' },
         {
           text: 'Yes',
           onPress: async () => {
+            hideAlert();
             try {
               const token = await AsyncStorage.getItem('auth-token');
               const response = await fetch(`${API_BASE_URL}/api/trips/${tripId}/request-cancel`, {
@@ -106,15 +121,21 @@ const TripsScreen = () => {
               });
               const data = await response.json();
               if (response.ok) {
-                Alert.alert('Success', 'Cancellation request submitted successfully.');
-                fetchTrips();
+                showAlert('Success', 'Cancellation request submitted successfully.', 'success', [
+                  { text: 'Okay', onPress: () => { hideAlert(); fetchTrips(); }, style: 'default' }
+                ]);
               } else {
-                Alert.alert('Error', data.error || 'Failed to request cancellation.');
+                showAlert('Error', data.error || 'Failed to request cancellation.', 'error', [
+                  { text: 'Okay', onPress: hideAlert, style: 'default' }
+                ]);
               }
             } catch (e) {
-              Alert.alert('Error', 'Network Error');
+              showAlert('Error', 'Network Error', 'error', [
+                { text: 'Okay', onPress: hideAlert, style: 'default' }
+              ]);
             }
           },
+          style: 'destructive',
         },
       ]
     );
@@ -384,6 +405,14 @@ const TripsScreen = () => {
         ))
       )}
 
+      <CustomAlert
+        visible={modal.visible}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+        buttons={modal.buttons}
+        onClose={hideAlert}
+      />
     </ScrollView>
   );
 };

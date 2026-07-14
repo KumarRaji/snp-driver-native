@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppHeader from '../components/AppHeader';
 
@@ -13,6 +13,20 @@ import PackagesScreen from '../screens/PackagesScreen';
 const Tab = createMaterialTopTabNavigator();
 
 export default function DriverTabs() {
+  const [isNavigating, setIsNavigating] = useState(false);
+  const lastNavigationTime = useRef(0);
+  const DEBOUNCE_DELAY = 600;
+
+  const handleTabPress = (e: any) => {
+    const now = Date.now();
+    if (now - lastNavigationTime.current < DEBOUNCE_DELAY) {
+      e.preventDefault();
+      return;
+    }
+    lastNavigationTime.current = now;
+    setIsNavigating(true);
+    setTimeout(() => setIsNavigating(false), 500);
+  };
   return (
     <SafeAreaView style={styles.container}>
       <AppHeader />
@@ -22,6 +36,9 @@ export default function DriverTabs() {
           tabBarStyle: styles.tabBar,
           tabBarLabelStyle: styles.label,
           tabBarIndicatorStyle: styles.indicator,
+        }}
+        screenListeners={{
+          tabPress: handleTabPress,
         }}
       >
         <Tab.Screen name="HOME" component={HomeScreen} />

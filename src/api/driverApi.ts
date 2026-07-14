@@ -4,11 +4,19 @@ import { Alert } from 'react-native';
 const BASE_URL = 'https://drivemate.api.luisant.cloud/api';
 let isLoggingOut = false;
 
+export const resetLogoutFlag = () => {
+  isLoggingOut = false;
+};
+
 const getHeaders = async () => {
   try {
     const token = await AsyncStorage.getItem('auth-token');
-    if (!token) return null;
+    if (!token) {
+      console.warn('No auth token found in AsyncStorage');
+      return null;
+    }
 
+    console.log('Token retrieved:', token.substring(0, 20) + '...');
     return {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
@@ -20,22 +28,26 @@ const getHeaders = async () => {
 };
 
 // 🔥 GLOBAL API CALL WRAPPER (Handles Deactivation & Errors)
-export const apiCall = async (url: string, options: any = {}) => {
+export const apiCall = async (url: string, options: any = {}, retryCount = 0): Promise<any> => {
+  const MAX_RETRIES = 2;
   const headers = await getHeaders();
   if (!headers) {
     console.warn('No auth headers available for API call to:', url);
     return {
-      error: true,
-      message: 'Authentication token not available.',
+      logout: true,
+      message: 'Please login again.',
     };
   }
 
   try {
     const res = await fetch(url, { ...options, headers });
     const text = await res.text();
+    console.log('API:', url, 'Status:', res.status);
+    console.log('Raw Response:', text.substring(0, 500));
 
     try {
       const data = JSON.parse(text);
+      console.log('Parsed Response:', data);
 
       // Detect deactivated or unauthorized states
       const isDeactivated =
@@ -60,8 +72,16 @@ export const apiCall = async (url: string, options: any = {}) => {
           data.message.toLowerCase().includes('authentication failed')
         ));
 
-      // Only logout if we have a clear token error AND 401/403
+      // Retry on 403 with "Invalid token" (transient backend issue)
+      if (res.status === 403 && isTokenError && retryCount < MAX_RETRIES) {
+        console.warn(`Retrying ${url} (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return apiCall(url, options, retryCount + 1);
+      }
+
+      // Only logout if we have a clear token error AND 401/403 after retries
       if (isTokenError && (res.status === 401 || res.status === 403)) {
+        console.error('Token error detected:', { isTokenError, status: res.status, error: data?.error, message: data?.message });
         return { logout: true, message: data?.message || 'Your session expired. Please login again.' };
       }
 
@@ -77,6 +97,10 @@ export const apiCall = async (url: string, options: any = {}) => {
       if (res.status === 401 || res.status === 403) {
         // If we can't parse JSON but got 401/403, it's likely a server issue
         return { error: true, message: 'Temporary authentication issue. Please try again.' };
+      }
+      if (res.status >= 500) {
+        console.error('Server error on', url, '- not logging out');
+        return { error: true, message: 'Server error. Please try again later.' };
       }
       return { error: true, message: 'Server not responding. Please try again later.' };
     }
@@ -104,16 +128,15 @@ export const handleLogoutIfRequired = async (data: any, navigation: any) => {
         text: 'OK',
         onPress: async () => {
           await AsyncStorage.removeItem('auth-token');
-          isLoggingOut = false;
-          navigation.replace('Login');
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+          });
         },
       },
     ],
     {
       cancelable: false,
-      onDismiss: () => {
-        isLoggingOut = false;
-      },
     }
   );
 

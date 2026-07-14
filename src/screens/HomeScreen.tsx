@@ -37,6 +37,7 @@ const HomeScreen = () => {
   const [trips, setTrips] = useState<any[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
   const navigation = useNavigation<any>();
 
   // Complete modal
@@ -74,12 +75,16 @@ const HomeScreen = () => {
   };
 
   const fetchTrips = async () => {
+    if (isFetching) return;
+    setIsFetching(true);
     try {
       const data = await getTrips();
       if (await handleLogoutIfRequired(data, navigation)) return;
       setTrips(data?.bookings || data?.trips || []);
     } catch (error) {
       console.error('Error fetching trips:', error);
+    } finally {
+      setIsFetching(false);
     }
   };
 

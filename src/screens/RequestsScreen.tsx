@@ -43,6 +43,7 @@ const RequestsScreen = () => {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [activeSub, setActiveSub] = useState<any>(null);
   const [loadingSub, setLoadingSub] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [alertInfo, setAlertInfo] = useState({ visible: false, title: '', message: '', type: 'info' as const, buttons: [] as any[] });
   const navigation = useNavigation<any>();
 
@@ -56,6 +57,8 @@ const RequestsScreen = () => {
   );
 
   const fetchRequests = async () => {
+    if (isFetching) return;
+    setIsFetching(true);
     try {
       setLoadingSub(true);
 
@@ -77,6 +80,7 @@ const RequestsScreen = () => {
       console.error('Fetch requests error:', e);
     } finally {
       setLoadingSub(false);
+      setIsFetching(false);
     }
   };
 
