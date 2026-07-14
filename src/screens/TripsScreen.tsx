@@ -71,6 +71,8 @@ const TripsScreen = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'ONGOING':
+        return '#16a34a'; // Green
       case 'CONFIRMED':
         return '#2ecc71';
       case 'COMPLETED':
@@ -78,7 +80,7 @@ const TripsScreen = () => {
       case 'CANCELLED':
       case 'CANCELLED_BY_DRIVER':
       case 'CANCELLED_BY_CUSTOMER':
-        return '#e74c3c';
+        return '#ef4444';
       default:
         return '#999';
     }
@@ -195,13 +197,22 @@ const TripsScreen = () => {
             <Text style={[styles.label, { marginTop: 10 }]}>EST. EARNINGS</Text>
             <Text style={styles.earnings}>₹{trip.estimateAmount || 0}</Text>
 
-            {trip.status === 'CONFIRMED' && !trip.cancellationRequested && (
+            {(trip.status === 'CONFIRMED' || trip.status === 'ONGOING') &&
+              !trip.cancellationRequested && (
               <TouchableOpacity
                 style={styles.cancelButton}
+                activeOpacity={0.8}
                 onPress={() => handleCancelTrip(trip.id)}
               >
-                <Feather name="x" size={16} color="#ef4444" />
-                <Text style={styles.cancelButtonText}>Cancel Trip</Text>
+                <Feather
+                  name="x"
+                  size={18}
+                  color="#ef4444"
+                />
+
+                <Text style={styles.cancelButtonText}>
+                  Cancel Trip
+                </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -567,8 +578,23 @@ const styles = StyleSheet.create({
   star: { color: '#FBBF24', fontSize: 16 },
   feedback: { color: '#666', fontStyle: 'italic', fontSize: 12, marginTop: 2 },
 
-  cancelButton: { marginTop: 10, borderWidth: 1, borderColor: '#EF4444', borderRadius: 8, paddingVertical: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 },
-  cancelButtonText: { color: '#EF4444', fontSize: 15, fontWeight: '700' },
+  cancelButton: {
+    marginTop: 18,
+    height: 48,
+    borderWidth: 1.5,
+    borderColor: '#fca5a5',
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButtonText: {
+    marginLeft: 8,
+    color: '#ef4444',
+    fontSize: 16,
+    fontWeight: '700',
+  },
 
   timelineRow: {
     flexDirection: 'row',
